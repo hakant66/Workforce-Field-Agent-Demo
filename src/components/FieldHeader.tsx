@@ -19,9 +19,8 @@ export default function FieldHeader({ onHistoryClick }: FieldHeaderProps) {
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between relative">
         {/* Logo / Title */}
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div>
             <img src={ckdeltaLogo} alt="CKDelta logo" className="w-9 h-9 rounded object-contain" />
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-signal animate-pulse" />
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-wide text-foreground uppercase">

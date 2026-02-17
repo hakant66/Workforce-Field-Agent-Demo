@@ -85,13 +85,17 @@ export default function SummaryCard({ data, confidence, onAccept, onDelete, onUp
       <div className="p-4 space-y-3">
         {fieldsMeta.map(({ key, confKey, label, icon: Icon }, i) => {
           const conf = confidence?.[confKey];
+          const isUncertain = conf != null && conf.confidence < 75;
           return (
             <motion.div
               key={key}
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.15 + i * 0.08 }}
-              className="flex gap-3"
+              className={`flex gap-3 rounded-md p-2 -mx-2 transition-colors ${
+                isUncertain ? "border border-yellow-400/40 bg-yellow-400/5" : ""
+              }`}
+              title={isUncertain ? "Uncertain — please double-check this field" : undefined}
             >
               <div className="mt-0.5 w-7 h-7 rounded bg-secondary flex items-center justify-center shrink-0">
                 <Icon className="w-3.5 h-3.5 text-primary" />
@@ -109,6 +113,11 @@ export default function SummaryCard({ data, confidence, onAccept, onDelete, onUp
                       {conf.confidence}%
                       <Info className="w-2.5 h-2.5" />
                     </button>
+                  )}
+                  {isUncertain && (
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-yellow-400/15 text-yellow-400 border border-yellow-400/25">
+                      ⚠ Uncertain
+                    </span>
                   )}
                 </div>
 

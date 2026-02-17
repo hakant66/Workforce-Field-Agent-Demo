@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, MapPin, Wrench, Trash2, Download } from "lucide-react";
+import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface JobRecord {
@@ -74,9 +74,12 @@ export function downloadJobHistoryCsv() {
 interface HistoryPanelProps {
   open: boolean;
   onClose: () => void;
+  pendingCount?: number;
+  isSyncingQueue?: boolean;
+  onSyncNow?: () => void;
 }
 
-export default function HistoryPanel({ open, onClose }: HistoryPanelProps) {
+export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow }: HistoryPanelProps) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
 
   useEffect(() => {
@@ -146,6 +149,28 @@ export default function HistoryPanel({ open, onClose }: HistoryPanelProps) {
             </div>
 
             <ScrollArea className="flex-1">
+              {/* Sync Now banner */}
+              {pendingCount > 0 && onSyncNow && (
+                <div className="mx-3 mt-3">
+                  <motion.button
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={onSyncNow}
+                    disabled={isSyncingQueue}
+                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                      isSyncingQueue
+                        ? "bg-secondary text-muted-foreground border border-border"
+                        : "bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20"
+                    }`}
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isSyncingQueue ? "animate-spin" : ""}`} />
+                    {isSyncingQueue
+                      ? `Syncing ${pendingCount} job${pendingCount > 1 ? "s" : ""}...`
+                      : `Sync Now · ${pendingCount} pending`}
+                  </motion.button>
+                </div>
+              )}
               {jobs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                   <History className="w-8 h-8 mb-3 opacity-30" />

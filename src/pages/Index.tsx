@@ -43,7 +43,7 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const Index = () => {
   const isOnline = useOnlineStatus();
-  const { enqueue, isProcessing, pendingCount } = useSyncQueue();
+  const { enqueue, isProcessing, pendingCount, processQueue } = useSyncQueue();
   const [appState, setAppState] = useState<AppState>("idle");
   const [duration, setDuration] = useState(0);
   const [transcriptLines, setTranscriptLines] = useState<string[]>([]);
@@ -402,7 +402,13 @@ const Index = () => {
         </section>
       </main>
 
-      <HistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <HistoryPanel
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        pendingCount={pendingCount}
+        isSyncingQueue={isProcessing}
+        onSyncNow={processQueue}
+      />
     </div>
   );
 };

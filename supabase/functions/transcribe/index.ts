@@ -28,52 +28,92 @@ serve(async (req) => {
     const arrayBuffer = await audioFile.arrayBuffer();
     const uint8 = new Uint8Array(arrayBuffer);
 
-    // Log debug info
     console.log("Audio file size:", uint8.length, "original type:", audioFile.type, "original name:", audioFile.name);
 
-    // Build multipart/form-data manually to guarantee correct Content-Type on the file part
-    const boundary = "----WebKitFormBoundary" + crypto.randomUUID().replace(/-/g, "");
-    const encoder = new TextEncoder();
+    // Helper: build multipart body for Whisper
+    function buildMultipartBody(fileBytes: Uint8Array, filename: string, contentType: string) {
+      const boundary = "----WebKitFormBoundary" + crypto.randomUUID().replace(/-/g, "");
+      const encoder = new TextEncoder();
+      const filePart = encoder.encode(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`
+      );
+      const modelPart = encoder.encode(
+        `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n--${boundary}--\r\n`
+      );
+      const body = new Uint8Array(filePart.length + fileBytes.length + modelPart.length);
+      body.set(filePart, 0);
+      body.set(fileBytes, filePart.length);
+      body.set(modelPart, filePart.length + fileBytes.length);
+      return { body, boundary };
+    }
 
-    const filePart = [
-      `--${boundary}\r\n`,
-      `Content-Disposition: form-data; name="file"; filename="recording.webm"\r\n`,
-      `Content-Type: audio/webm\r\n\r\n`,
-    ];
-    const modelPart = [
-      `\r\n--${boundary}\r\n`,
-      `Content-Disposition: form-data; name="model"\r\n\r\n`,
-      `whisper-1`,
-      `\r\n--${boundary}--\r\n`,
-    ];
-
-    const filePartBytes = encoder.encode(filePart.join(""));
-    const modelPartBytes = encoder.encode(modelPart.join(""));
-
-    const body = new Uint8Array(filePartBytes.length + uint8.length + modelPartBytes.length);
-    body.set(filePartBytes, 0);
-    body.set(uint8, filePartBytes.length);
-    body.set(modelPartBytes, filePartBytes.length + uint8.length);
-
-    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": `multipart/form-data; boundary=${boundary}`,
-      },
-      body: body,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Whisper error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "Transcription failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Helper: call Whisper API
+    async function callWhisper(fileBytes: Uint8Array, filename: string, contentType: string) {
+      const { body, boundary } = buildMultipartBody(fileBytes, filename, contentType);
+      return await fetch("https://api.openai.com/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+        },
+        body,
       });
     }
 
+    // Helper: convert raw audio bytes to a minimal WAV (16-bit PCM, mono, 16kHz)
+    // This wraps the raw bytes in a WAV header so Whisper can parse the format
+    function rawToWav(rawPcm: Uint8Array, sampleRate = 16000, channels = 1, bitsPerSample = 16): Uint8Array {
+      const dataSize = rawPcm.length;
+      const header = new ArrayBuffer(44);
+      const view = new DataView(header);
+      const enc = new TextEncoder();
+      // RIFF header
+      new Uint8Array(header, 0, 4).set(enc.encode("RIFF"));
+      view.setUint32(4, 36 + dataSize, true);
+      new Uint8Array(header, 8, 4).set(enc.encode("WAVE"));
+      // fmt chunk
+      new Uint8Array(header, 12, 4).set(enc.encode("fmt "));
+      view.setUint32(16, 16, true); // chunk size
+      view.setUint16(20, 1, true); // PCM
+      view.setUint16(22, channels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * channels * (bitsPerSample / 8), true);
+      view.setUint16(32, channels * (bitsPerSample / 8), true);
+      view.setUint16(34, bitsPerSample, true);
+      // data chunk
+      new Uint8Array(header, 36, 4).set(enc.encode("data"));
+      view.setUint32(40, dataSize, true);
+      const wav = new Uint8Array(44 + dataSize);
+      wav.set(new Uint8Array(header), 0);
+      wav.set(rawPcm, 44);
+      return wav;
+    }
+
+    // Attempt 1: send as webm
+    console.log("Attempt 1: sending as webm");
+    let response = await callWhisper(uint8, "recording.webm", "audio/webm");
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn("Whisper webm attempt failed:", response.status, errorText);
+
+      // Attempt 2: wrap raw bytes in WAV header and retry
+      console.log("Attempt 2: converting to WAV wrapper and retrying");
+      const wavBytes = rawToWav(uint8);
+      response = await callWhisper(wavBytes, "recording.wav", "audio/wav");
+
+      if (!response.ok) {
+        const errorText2 = await response.text();
+        console.error("Whisper WAV attempt also failed:", response.status, errorText2);
+        return new Response(JSON.stringify({ error: "Transcription failed", details: errorText2 }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const result = await response.json();
+    console.log("Transcription succeeded, text length:", result.text?.length);
     return new Response(JSON.stringify({ text: result.text }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

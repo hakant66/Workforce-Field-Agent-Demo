@@ -6,15 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const systemPrompt = `You are a technical data clerk. Extract structured job details from a field engineer's transcript. For each extracted field, provide a confidence score (0-100) and a brief reasoning explaining your confidence level.
+const systemPrompt = `You are a technical data clerk. Extract structured job details from a field engineer's transcript. The transcript may be in any language (e.g. English, Spanish, Polish, etc.). Regardless of the input language, you MUST always output the "description" value and the "outcome" value in English for the central database. Site and asset identifiers should be kept as-is (proper nouns / codes).
+
+For each extracted field, provide a confidence score (0-100) and a brief reasoning explaining your confidence level.
 
 Low confidence examples:
 - Background noise made the asset ID unclear
 - The engineer mumbled the site name
 - Multiple sites were mentioned, unsure which is primary
 
-If the user says "job done" or "finished," set outcome to "Completed".
-If they mention "missing parts" or "returning," set to "Incomplete".`;
+If the user says "job done" or "finished" (or equivalent in any language), set outcome to "Completed".
+If they mention "missing parts" or "returning" (or equivalent in any language), set to "Incomplete".`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

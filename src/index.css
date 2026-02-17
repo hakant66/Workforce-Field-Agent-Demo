@@ -4,93 +4,52 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 25% 10%;
+    --background: 220 18% 10%;
+    --foreground: 210 20% 88%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card: 220 16% 14%;
+    --card-foreground: 210 20% 88%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover: 220 16% 14%;
+    --popover-foreground: 210 20% 88%;
 
-    --primary: 220 25% 14%;
-    --primary-foreground: 45 100% 96%;
+    --primary: 35 100% 50%;
+    --primary-foreground: 220 18% 8%;
 
-    --secondary: 220 15% 90%;
-    --secondary-foreground: 220 25% 14%;
+    --secondary: 220 14% 20%;
+    --secondary-foreground: 210 15% 75%;
 
-    --muted: 220 15% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 220 14% 18%;
+    --muted-foreground: 215 12% 50%;
 
-    --accent: 35 95% 55%;
-    --accent-foreground: 220 25% 10%;
+    --accent: 35 100% 50%;
+    --accent-foreground: 220 18% 8%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 88%;
-    --input: 220 15% 88%;
-    --ring: 35 95% 55%;
+    --border: 220 14% 22%;
+    --input: 220 14% 22%;
+    --ring: 35 100% 50%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --recording: 0 85% 55%;
-    --recording-glow: 0 85% 55%;
+    --recording: 0 85% 52%;
+    --recording-glow: 0 90% 58%;
     --success: 152 60% 42%;
     --success-foreground: 0 0% 100%;
+    --signal: 152 70% 50%;
+    --header-bg: 220 20% 8%;
+    --header-border: 220 14% 18%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 220 25% 7%;
-    --foreground: 220 15% 92%;
-
-    --card: 220 25% 10%;
-    --card-foreground: 220 15% 92%;
-
-    --popover: 220 25% 10%;
-    --popover-foreground: 220 15% 92%;
-
-    --primary: 35 95% 55%;
-    --primary-foreground: 220 25% 7%;
-
-    --secondary: 220 20% 16%;
-    --secondary-foreground: 220 15% 92%;
-
-    --muted: 220 20% 16%;
-    --muted-foreground: 220 10% 55%;
-
-    --accent: 35 95% 55%;
-    --accent-foreground: 220 25% 7%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 35 95% 55%;
-
-    --recording: 0 85% 55%;
-    --recording-glow: 0 85% 55%;
-    --success: 152 60% 42%;
-    --success-foreground: 0 0% 100%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 18% 10%;
+    --sidebar-foreground: 210 20% 88%;
+    --sidebar-primary: 35 100% 50%;
+    --sidebar-primary-foreground: 220 18% 8%;
+    --sidebar-accent: 220 14% 20%;
+    --sidebar-accent-foreground: 210 20% 88%;
+    --sidebar-border: 220 14% 22%;
+    --sidebar-ring: 35 100% 50%;
   }
 }
 
@@ -100,7 +59,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
   }
 
@@ -109,18 +68,26 @@
   }
 }
 
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
+/* Signal bar animation */
+@keyframes signal-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
-@keyframes waveform {
-  0%, 100% { height: 8px; }
-  50% { height: 28px; }
+/* Waveform bar animation */
+@keyframes waveform-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+/* Glow pulse for record button */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px hsl(0 85% 52% / 0.3), 0 0 40px hsl(0 85% 52% / 0.1); }
+  50% { box-shadow: 0 0 30px hsl(0 85% 52% / 0.6), 0 0 60px hsl(0 85% 52% / 0.2); }
+}
+
+/* Scan line effect for header */
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }

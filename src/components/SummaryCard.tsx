@@ -1,28 +1,69 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Wrench, FileText, CheckCircle, Upload } from "lucide-react";
+import { MapPin, Wrench, FileText, CheckCircle, Upload, Trash2, Check, Pencil, Info } from "lucide-react";
 
-interface SummaryData {
+interface FieldConfidence {
+  value: string;
+  confidence: number;
+  reasoning: string;
+}
+
+export interface SummaryData {
   site: string;
   asset: string;
   jobDescription: string;
   outcome: string;
 }
 
+export interface ConfidenceData {
+  site?: FieldConfidence;
+  asset?: FieldConfidence;
+  description?: FieldConfidence;
+  outcome?: FieldConfidence;
+}
+
 interface SummaryCardProps {
   data: SummaryData;
-  onSync: () => void;
+  confidence?: ConfidenceData;
+  onAccept: () => void;
+  onDelete: () => void;
+  onUpdate: (updated: SummaryData) => void;
   syncing: boolean;
   synced: boolean;
 }
 
-const fields = [
-  { key: "site" as const, label: "Site", icon: MapPin },
-  { key: "asset" as const, label: "Asset", icon: Wrench },
-  { key: "jobDescription" as const, label: "Job Description", icon: FileText },
-  { key: "outcome" as const, label: "Outcome", icon: CheckCircle },
+const fieldsMeta = [
+  { key: "site" as const, confKey: "site" as const, label: "Site", icon: MapPin },
+  { key: "asset" as const, confKey: "asset" as const, label: "Asset", icon: Wrench },
+  { key: "jobDescription" as const, confKey: "description" as const, label: "Job Description", icon: FileText },
+  { key: "outcome" as const, confKey: "outcome" as const, label: "Outcome", icon: CheckCircle },
 ];
 
-export default function SummaryCard({ data, onSync, syncing, synced }: SummaryCardProps) {
+function confidenceColor(score: number) {
+  if (score >= 80) return "text-signal bg-signal/10 border-signal/20";
+  if (score >= 50) return "text-yellow-400 bg-yellow-400/10 border-yellow-400/20";
+  return "text-recording bg-recording/10 border-recording/20";
+}
+
+export default function SummaryCard({ data, confidence, onAccept, onDelete, onUpdate, syncing, synced }: SummaryCardProps) {
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState<SummaryData>(data);
+  const [expandedReasoning, setExpandedReasoning] = useState<string | null>(null);
+
+  const handleStartEdit = () => {
+    setEditData({ ...data });
+    setEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    onUpdate(editData);
+    setEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.97 }}
@@ -36,68 +77,165 @@ export default function SummaryCard({ data, onSync, syncing, synced }: SummaryCa
           Job Summary
         </span>
         <span className="text-[10px] font-mono text-signal bg-signal/10 px-2 py-0.5 rounded-sm">
-          EXTRACTED
+          {synced ? "ACCEPTED" : "REVIEW"}
         </span>
       </div>
 
       {/* Fields */}
       <div className="p-4 space-y-3">
-        {fields.map(({ key, label, icon: Icon }, i) => (
-          <motion.div
-            key={key}
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15 + i * 0.08 }}
-            className="flex gap-3"
-          >
-            <div className="mt-0.5 w-7 h-7 rounded bg-secondary flex items-center justify-center shrink-0">
-              <Icon className="w-3.5 h-3.5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">
-                {label}
-              </p>
-              <p className="text-sm text-card-foreground leading-snug">{data[key]}</p>
-            </div>
-          </motion.div>
-        ))}
+        {fieldsMeta.map(({ key, confKey, label, icon: Icon }, i) => {
+          const conf = confidence?.[confKey];
+          return (
+            <motion.div
+              key={key}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15 + i * 0.08 }}
+              className="flex gap-3"
+            >
+              <div className="mt-0.5 w-7 h-7 rounded bg-secondary flex items-center justify-center shrink-0">
+                <Icon className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                    {label}
+                  </p>
+                  {conf && (
+                    <button
+                      onClick={() => setExpandedReasoning(expandedReasoning === key ? null : key)}
+                      className={`flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border ${confidenceColor(conf.confidence)} cursor-pointer hover:opacity-80 transition-opacity`}
+                    >
+                      {conf.confidence}%
+                      <Info className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+
+                {editing ? (
+                  key === "outcome" ? (
+                    <select
+                      value={editData[key]}
+                      onChange={(e) => setEditData((prev) => ({ ...prev, [key]: e.target.value }))}
+                      className="w-full text-sm bg-secondary border border-border rounded px-2 py-1 text-card-foreground font-mono"
+                    >
+                      <option value="Completed">Completed</option>
+                      <option value="Incomplete">Incomplete</option>
+                    </select>
+                  ) : key === "jobDescription" ? (
+                    <textarea
+                      value={editData[key]}
+                      onChange={(e) => setEditData((prev) => ({ ...prev, [key]: e.target.value }))}
+                      rows={2}
+                      className="w-full text-sm bg-secondary border border-border rounded px-2 py-1 text-card-foreground resize-none"
+                    />
+                  ) : (
+                    <input
+                      value={editData[key]}
+                      onChange={(e) => setEditData((prev) => ({ ...prev, [key]: e.target.value }))}
+                      className="w-full text-sm bg-secondary border border-border rounded px-2 py-1 text-card-foreground"
+                    />
+                  )
+                ) : (
+                  <p className="text-sm text-card-foreground leading-snug">{data[key]}</p>
+                )}
+
+                {/* Reasoning tooltip */}
+                {expandedReasoning === key && conf?.reasoning && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="text-[11px] text-muted-foreground mt-1 italic leading-relaxed"
+                  >
+                    {conf.reasoning}
+                  </motion.p>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* Sync Button */}
-      <div className="px-4 pb-4">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={onSync}
-          disabled={syncing || synced}
-          className={`w-full flex items-center justify-center gap-2 py-3 rounded-md font-semibold text-sm transition-all duration-300 ${
-            synced
-              ? "bg-signal/15 text-signal border border-signal/30"
-              : syncing
-              ? "bg-secondary text-muted-foreground border border-border"
-              : "bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/50"
-          }`}
-        >
-          {synced ? (
-            <>
-              <CheckCircle className="w-4 h-4" />
-              Synced to ERP
-            </>
-          ) : syncing ? (
-            <>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full"
-              />
-              Syncing...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4" />
-              Sync to ERP
-            </>
-          )}
-        </motion.button>
+      {/* Action Buttons */}
+      <div className="px-4 pb-4 space-y-2">
+        {editing ? (
+          <div className="flex gap-2">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSaveEdit}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md font-semibold text-sm bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/50 transition-all"
+            >
+              <Check className="w-4 h-4" />
+              Save Changes
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleCancelEdit}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md font-semibold text-sm bg-secondary text-muted-foreground border border-border hover:bg-secondary/80 transition-all"
+            >
+              Cancel
+            </motion.button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            {/* Accept */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onAccept}
+              disabled={syncing || synced}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md font-semibold text-sm transition-all duration-300 ${
+                synced
+                  ? "bg-signal/15 text-signal border border-signal/30"
+                  : syncing
+                  ? "bg-secondary text-muted-foreground border border-border"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/50"
+              }`}
+            >
+              {synced ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Accepted
+                </>
+              ) : syncing ? (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full"
+                  />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Accept
+                </>
+              )}
+            </motion.button>
+
+            {/* Update */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleStartEdit}
+              disabled={synced}
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-md font-semibold text-sm bg-secondary text-foreground border border-border hover:bg-secondary/80 transition-all disabled:opacity-40"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </motion.button>
+
+            {/* Delete */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onDelete}
+              disabled={synced}
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-md font-semibold text-sm bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-all disabled:opacity-40"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </motion.button>
+          </div>
+        )}
       </div>
     </motion.div>
   );

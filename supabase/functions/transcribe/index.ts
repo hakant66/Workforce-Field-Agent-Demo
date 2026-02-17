@@ -24,9 +24,15 @@ serve(async (req) => {
       });
     }
 
+    // Read the raw bytes and reconstruct as a proper File with explicit type
+    const arrayBuffer = await audioFile.arrayBuffer();
+    const properFile = new File([arrayBuffer], "recording.webm", {
+      type: "audio/webm",
+    });
+
     // Forward to OpenAI Whisper
     const whisperForm = new FormData();
-    whisperForm.append("file", audioFile, "recording.webm");
+    whisperForm.append("file", properFile, "recording.webm");
     whisperForm.append("model", "whisper-1");
 
     const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {

@@ -233,7 +233,7 @@ const Index = () => {
     setTimeout(() => {
       setSyncingCRM(false);
       setSyncedCRM(true);
-      toast.success("Job synced to CRM");
+      toast.success("Job synced to ERP");
     }, 2000);
   };
 

@@ -249,7 +249,7 @@ export default function SummaryCard({ data, confidence, onAccept, onDelete, onUp
               )}
             </div>
 
-            {/* Sync to CRM — appears after acceptance */}
+            {/* Sync to ERP — appears after acceptance */}
             {synced && onSyncCRM && (
               <motion.button
                 initial={{ opacity: 0, y: 6 }}
@@ -268,7 +268,7 @@ export default function SummaryCard({ data, confidence, onAccept, onDelete, onUp
                 {syncedCRM ? (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    Synced to CRM
+                    Synced to ERP
                   </>
                 ) : syncingCRM ? (
                   <>
@@ -277,12 +277,12 @@ export default function SummaryCard({ data, confidence, onAccept, onDelete, onUp
                       transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                       className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full"
                     />
-                    Syncing to CRM...
+                    Syncing to ERP...
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Sync to CRM
+                    Sync to ERP
                   </>
                 )}
               </motion.button>

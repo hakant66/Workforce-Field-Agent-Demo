@@ -1,13 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Code, ChevronDown, ChevronUp, History } from "lucide-react";
+import { Code, ChevronDown, ChevronUp, WifiOff } from "lucide-react";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
 import TranscriptPanel from "@/components/TranscriptPanel";
 import SummaryCard from "@/components/SummaryCard";
 import HistoryPanel, { saveJobToHistory } from "@/components/HistoryPanel";
+import { useOnlineStatus } from "@/hooks/use-online-status";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 
@@ -40,6 +41,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const Index = () => {
+  const isOnline = useOnlineStatus();
   const [appState, setAppState] = useState<AppState>("idle");
   const [duration, setDuration] = useState(0);
   const [transcriptLines, setTranscriptLines] = useState<string[]>([]);
@@ -122,6 +124,24 @@ const Index = () => {
   }, []);
 
   const processAudio = useCallback(async (audioBlob: Blob) => {
+    // Offline path: save recording metadata locally
+    if (!isOnline) {
+      const pendingJobs = JSON.parse(localStorage.getItem("pendingJobs") || "[]");
+      pendingJobs.push({
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        audioBlobSize: audioBlob.size,
+        status: "Pending Sync",
+      });
+      localStorage.setItem("pendingJobs", JSON.stringify(pendingJobs));
+      toast("You are offline — Job saved locally", {
+        icon: <WifiOff className="w-4 h-4 text-yellow-400" />,
+        description: "It will be processed when you're back online.",
+      });
+      setAppState("idle");
+      return;
+    }
+
     setAppState("processing");
 
     try {
@@ -163,10 +183,8 @@ const Index = () => {
 
       const extracted = await extractRes.json();
 
-      // Store debug data
       setDebugData({ rawTranscript: text, rawExtraction: extracted });
 
-      // Store confidence data
       setConfidenceData({
         site: extracted.site?.confidence != null ? extracted.site : undefined,
         asset: extracted.asset?.confidence != null ? extracted.asset : undefined,
@@ -186,7 +204,7 @@ const Index = () => {
       toast.error(err instanceof Error ? err.message : "Processing failed");
       setAppState("idle");
     }
-  }, []);
+  }, [isOnline]);
 
   const handleToggleRecord = useCallback(async () => {
     if (appState === "idle" || appState === "result") {
@@ -250,6 +268,21 @@ const Index = () => {
       <FieldHeader onHistoryClick={() => setHistoryOpen(true)} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8">
+        {/* Offline Banner */}
+        <AnimatePresence>
+          {!isOnline && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-sm font-mono"
+            >
+              <WifiOff className="w-4 h-4 shrink-0" />
+              You are offline — recordings will be saved locally
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Recording Area */}
         <section className="py-10 flex flex-col items-center gap-4">
           <AudioWaveform active={appState === "recording"} />
@@ -308,6 +341,7 @@ const Index = () => {
               <SummaryCard
                 data={summary}
                 confidence={confidenceData || undefined}
+                isOnline={isOnline}
                 onAccept={handleAccept}
                 onDelete={handleDelete}
                 onUpdate={handleUpdate}

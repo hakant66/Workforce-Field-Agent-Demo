@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Wrench, FileText, CheckCircle, Upload, Trash2, Check, Pencil, Info, Send } from "lucide-react";
+import { MapPin, Wrench, FileText, CheckCircle, Trash2, Check, Pencil, Info, Send, WifiOff } from "lucide-react";
 
 interface FieldConfidence {
   value: string;
@@ -25,6 +25,7 @@ export interface ConfidenceData {
 interface SummaryCardProps {
   data: SummaryData;
   confidence?: ConfidenceData;
+  isOnline?: boolean;
   onAccept: () => void;
   onDelete: () => void;
   onUpdate: (updated: SummaryData) => void;
@@ -48,7 +49,7 @@ function confidenceColor(score: number) {
   return "text-recording bg-recording/10 border-recording/20";
 }
 
-export default function SummaryCard({ data, confidence, onAccept, onDelete, onUpdate, onSyncCRM, syncing, synced, syncingCRM, syncedCRM }: SummaryCardProps) {
+export default function SummaryCard({ data, confidence, isOnline = true, onAccept, onDelete, onUpdate, onSyncCRM, syncing, synced, syncingCRM, syncedCRM }: SummaryCardProps) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<SummaryData>(data);
   const [expandedReasoning, setExpandedReasoning] = useState<string | null>(null);
@@ -281,8 +282,17 @@ export default function SummaryCard({ data, confidence, onAccept, onDelete, onUp
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
-                    Sync to ERP
+                    {isOnline ? (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Sync to ERP
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="w-4 h-4" />
+                        Save for Later
+                      </>
+                    )}
                   </>
                 )}
               </motion.button>

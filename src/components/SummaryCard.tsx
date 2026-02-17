@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Wrench, FileText, CheckCircle, Upload, Trash2, Check, Pencil, Info } from "lucide-react";
+import { MapPin, Wrench, FileText, CheckCircle, Upload, Trash2, Check, Pencil, Info, Send } from "lucide-react";
 
 interface FieldConfidence {
   value: string;
@@ -28,8 +28,11 @@ interface SummaryCardProps {
   onAccept: () => void;
   onDelete: () => void;
   onUpdate: (updated: SummaryData) => void;
+  onSyncCRM?: () => void;
   syncing: boolean;
   synced: boolean;
+  syncingCRM?: boolean;
+  syncedCRM?: boolean;
 }
 
 const fieldsMeta = [
@@ -45,7 +48,7 @@ function confidenceColor(score: number) {
   return "text-recording bg-recording/10 border-recording/20";
 }
 
-export default function SummaryCard({ data, confidence, onAccept, onDelete, onUpdate, syncing, synced }: SummaryCardProps) {
+export default function SummaryCard({ data, confidence, onAccept, onDelete, onUpdate, onSyncCRM, syncing, synced, syncingCRM, syncedCRM }: SummaryCardProps) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<SummaryData>(data);
   const [expandedReasoning, setExpandedReasoning] = useState<string | null>(null);
@@ -186,63 +189,104 @@ export default function SummaryCard({ data, confidence, onAccept, onDelete, onUp
             </motion.button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            {/* Accept */}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onAccept}
-              disabled={syncing || synced}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md font-semibold text-sm transition-all duration-300 ${
-                synced
-                  ? "bg-signal/15 text-signal border border-signal/30"
-                  : syncing
-                  ? "bg-secondary text-muted-foreground border border-border"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/50"
-              }`}
-            >
-              {synced ? (
-                <>
-                  <CheckCircle className="w-4 h-4" />
-                  Accepted
-                </>
-              ) : syncing ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full"
-                  />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  Accept
-                </>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              {/* Accept */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={onAccept}
+                disabled={syncing || synced}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md font-semibold text-sm transition-all duration-300 ${
+                  synced
+                    ? "bg-signal/15 text-signal border border-signal/30"
+                    : syncing
+                    ? "bg-secondary text-muted-foreground border border-border"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/50"
+                }`}
+              >
+                {synced ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Accepted
+                  </>
+                ) : syncing ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full"
+                    />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Accept
+                  </>
+                )}
+              </motion.button>
+
+              {/* Edit — always available */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleStartEdit}
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-md font-semibold text-sm bg-secondary text-foreground border border-border hover:bg-secondary/80 transition-all"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit
+              </motion.button>
+
+              {/* Delete */}
+              {!synced && (
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={onDelete}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-md font-semibold text-sm bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </motion.button>
               )}
-            </motion.button>
+            </div>
 
-            {/* Update */}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleStartEdit}
-              disabled={synced}
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-md font-semibold text-sm bg-secondary text-foreground border border-border hover:bg-secondary/80 transition-all disabled:opacity-40"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              Edit
-            </motion.button>
-
-            {/* Delete */}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={onDelete}
-              disabled={synced}
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-md font-semibold text-sm bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-all disabled:opacity-40"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Delete
-            </motion.button>
+            {/* Sync to CRM — appears after acceptance */}
+            {synced && onSyncCRM && (
+              <motion.button
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={onSyncCRM}
+                disabled={syncingCRM || syncedCRM}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-md font-semibold text-sm transition-all duration-300 ${
+                  syncedCRM
+                    ? "bg-signal/15 text-signal border border-signal/30"
+                    : syncingCRM
+                    ? "bg-secondary text-muted-foreground border border-border"
+                    : "bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20"
+                }`}
+              >
+                {syncedCRM ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Synced to CRM
+                  </>
+                ) : syncingCRM ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full"
+                    />
+                    Syncing to CRM...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Sync to CRM
+                  </>
+                )}
+              </motion.button>
+            )}
           </div>
         )}
       </div>

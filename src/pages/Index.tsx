@@ -1,34 +1,43 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, FileText } from "lucide-react";
-import RecordButton, { WaveformVisualizer, TranscriptionCard } from "@/components/RecordingUI";
+import FieldHeader from "@/components/FieldHeader";
+import RecordButton from "@/components/RecordButton";
+import AudioWaveform from "@/components/AudioWaveform";
+import TranscriptPanel from "@/components/TranscriptPanel";
+import SummaryCard from "@/components/SummaryCard";
 
-interface Transcription {
-  id: string;
-  text: string;
-  timestamp: Date;
-  duration: number;
-}
+type AppState = "idle" | "recording" | "processing" | "result";
 
-// Demo transcription snippets for simulation
-const demoTexts = [
-  "Inspected HVAC unit on rooftop. Compressor is running but making unusual noise. Recommended replacing the capacitor and scheduling a follow-up visit next week.",
-  "Completed electrical panel inspection at Building C. All breakers are functioning properly. Noted minor corrosion on ground bus bar — applied anti-corrosion spray.",
-  "Water heater replacement completed at unit 4B. Old unit showed significant sediment buildup. New 50-gallon tank installed and tested. Customer satisfied.",
-  "Fire suppression system quarterly check done. All sprinkler heads clear, pressure gauge reading normal at 125 PSI. Updated inspection tag.",
-  "Generator maintenance complete. Changed oil, replaced air filter, tested automatic transfer switch. Runtime logged at 842 hours.",
+const demoTranscriptLines = [
+  "Arrived at Site 7B, north cooling tower.",
+  "Inspecting asset CT-204, centrifugal chiller unit.",
+  "Noticed abnormal vibration on the compressor shaft bearing.",
+  "Replaced worn coupling insert and re-aligned shaft.",
+  "Unit running within normal parameters after repair.",
+  "Job completed, ready for sign-off.",
 ];
 
-const Index = () => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const demoIndexRef = useRef(0);
+const demoSummary = {
+  site: "Site 7B — North Cooling Tower",
+  asset: "CT-204 Centrifugal Chiller",
+  jobDescription:
+    "Compressor shaft bearing showed abnormal vibration. Replaced worn coupling insert and performed shaft re-alignment.",
+  outcome:
+    "Unit restored to normal operating parameters. No further action required.",
+};
 
+const Index = () => {
+  const [appState, setAppState] = useState<AppState>("idle");
+  const [duration, setDuration] = useState(0);
+  const [transcriptLines, setTranscriptLines] = useState<string[]>([]);
+  const [syncing, setSyncing] = useState(false);
+  const [synced, setSynced] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Duration counter
   useEffect(() => {
-    if (isRecording) {
+    if (appState === "recording") {
       timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -36,131 +45,122 @@ const Index = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRecording]);
+  }, [appState]);
+
+  // Simulate transcript lines appearing during recording
+  useEffect(() => {
+    if (appState === "recording") {
+      let lineIndex = 0;
+      const addLine = () => {
+        if (lineIndex < demoTranscriptLines.length) {
+          setTranscriptLines((prev) => [...prev, demoTranscriptLines[lineIndex]]);
+          lineIndex++;
+          lineTimerRef.current = setTimeout(addLine, 1800 + Math.random() * 1200);
+        }
+      };
+      lineTimerRef.current = setTimeout(addLine, 1200);
+    }
+    return () => {
+      if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+    };
+  }, [appState]);
 
   const handleToggleRecord = useCallback(() => {
-    if (isRecording) {
-      setIsRecording(false);
-      const recordedDuration = duration;
+    if (appState === "idle" || appState === "result") {
+      // Start recording
+      setAppState("recording");
       setDuration(0);
-      setIsProcessing(true);
-
-      // Simulate transcription processing
+      setTranscriptLines([]);
+      setSynced(false);
+      setSyncing(false);
+    } else if (appState === "recording") {
+      // Stop → processing
+      setAppState("processing");
       setTimeout(() => {
-        const text = demoTexts[demoIndexRef.current % demoTexts.length];
-        demoIndexRef.current++;
-        setTranscriptions((prev) => [
-          {
-            id: crypto.randomUUID(),
-            text,
-            timestamp: new Date(),
-            duration: recordedDuration,
-          },
-          ...prev,
-        ]);
-        setIsProcessing(false);
-      }, 1500);
-    } else {
-      setIsRecording(true);
-      setDuration(0);
+        setAppState("result");
+      }, 2500);
     }
-  }, [isRecording, duration]);
+  }, [appState]);
 
-  const handleDelete = (id: string) => {
-    setTranscriptions((prev) => prev.filter((t) => t.id !== id));
+  const handleSync = () => {
+    setSyncing(true);
+    setTimeout(() => {
+      setSyncing(false);
+      setSynced(true);
+    }, 2000);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-20">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <Mic className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-foreground">
-              Field Service Audio to Text
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Tap to record • Auto-transcribe notes
-            </p>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background flex flex-col">
+      <FieldHeader />
 
-      <main className="max-w-2xl mx-auto px-4 pb-8">
-        {/* Recording Section */}
-        <section className="py-12 flex flex-col items-center gap-6">
-          <WaveformVisualizer active={isRecording} />
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8">
+        {/* Recording Area */}
+        <section className="py-10 flex flex-col items-center gap-4">
+          <AudioWaveform active={appState === "recording"} />
+
           <RecordButton
-            isRecording={isRecording}
+            isRecording={appState === "recording"}
             onClick={handleToggleRecord}
             duration={duration}
           />
-          <p className="mt-6 text-sm text-muted-foreground text-center">
-            {isRecording
-              ? "Recording… tap to stop and transcribe"
-              : isProcessing
-              ? "Processing audio…"
-              : "Tap the microphone to start recording"}
-          </p>
 
-          {/* Processing indicator */}
+          {/* Status Text */}
+          <motion.p
+            key={appState}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-sm text-muted-foreground text-center mt-2 font-mono"
+          >
+            {appState === "idle" && "Ready to record."}
+            {appState === "recording" && "Recording — tap to stop."}
+            {appState === "processing" && ""}
+            {appState === "result" && "Tap microphone to record again."}
+          </motion.p>
+
+          {/* Processing State */}
           <AnimatePresence>
-            {isProcessing && (
+            {appState === "processing" && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 text-accent-foreground"
+                className="flex items-center gap-3 px-5 py-3 rounded-lg bg-secondary border border-border"
               >
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full"
+                  className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full"
                 />
-                <span className="text-sm font-medium">Transcribing…</span>
+                <span className="text-sm font-mono text-foreground">
+                  Extracting job details...
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
         </section>
 
-        {/* Transcriptions */}
-        <section>
-          {transcriptions.length > 0 && (
-            <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Transcriptions ({transcriptions.length})
-              </h2>
-            </div>
-          )}
-          <div className="space-y-3">
-            <AnimatePresence>
-              {transcriptions.map((item) => (
-                <TranscriptionCard key={item.id} item={item} onDelete={handleDelete} />
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {transcriptions.length === 0 && !isRecording && !isProcessing && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16"
-            >
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-7 h-7 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground text-sm">
-                No transcriptions yet.
-                <br />
-                Record your first field note above.
-              </p>
-            </motion.div>
-          )}
+        {/* Transcript */}
+        <section className="mb-4">
+          <TranscriptPanel
+            lines={transcriptLines}
+            isRecording={appState === "recording"}
+          />
         </section>
+
+        {/* Summary Card */}
+        <AnimatePresence>
+          {appState === "result" && (
+            <section className="mb-4">
+              <SummaryCard
+                data={demoSummary}
+                onSync={handleSync}
+                syncing={syncing}
+                synced={synced}
+              />
+            </section>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

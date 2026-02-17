@@ -148,10 +148,10 @@ const Index = () => {
       setDebugData({ rawTranscript: text, rawExtraction: extracted });
 
       setSummary({
-        site: extracted.site || "Unknown",
-        asset: extracted.asset || "Unknown",
-        jobDescription: extracted.description || "No description extracted",
-        outcome: extracted.outcome || "Unknown",
+        site: extracted.site?.value || extracted.site || "Unknown",
+        asset: extracted.asset?.value || extracted.asset || "Unknown",
+        jobDescription: extracted.description?.value || extracted.description || "No description extracted",
+        outcome: extracted.outcome?.value || extracted.outcome || "Unknown",
       });
       setAppState("result");
     } catch (err) {

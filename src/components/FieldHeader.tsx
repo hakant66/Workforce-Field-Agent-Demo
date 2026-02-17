@@ -1,11 +1,14 @@
-import { Signal, Wifi, Battery, History } from "lucide-react";
+import { Signal, Wifi, Battery, History, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ckdeltaLogo from "@/assets/ckdelta-logo.png";
 
 interface FieldHeaderProps {
   onHistoryClick?: () => void;
+  isSyncingQueue?: boolean;
+  pendingCount?: number;
 }
 
-export default function FieldHeader({ onHistoryClick }: FieldHeaderProps) {
+export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount }: FieldHeaderProps) {
   return (
     <header className="bg-header-bg border-b border-header-border sticky top-0 z-30 overflow-hidden">
       {/* Scan line effect */}
@@ -32,15 +35,37 @@ export default function FieldHeader({ onHistoryClick }: FieldHeaderProps) {
           </div>
         </div>
 
-        {/* Signal Strength Indicator */}
+        {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* Queue syncing indicator */}
+          <AnimatePresence>
+            {isSyncingQueue && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                className="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/10 border border-primary/20 overflow-hidden"
+              >
+                <Loader2 className="w-3 h-3 text-primary animate-spin" />
+                <span className="text-[10px] font-mono text-primary whitespace-nowrap">
+                  Syncing {pendingCount}...
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {onHistoryClick && (
             <button
               onClick={onHistoryClick}
-              className="p-1.5 rounded hover:bg-secondary transition-colors"
+              className="p-1.5 rounded hover:bg-secondary transition-colors relative"
               title="Job History"
             >
               <History className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+              {(pendingCount ?? 0) > 0 && !isSyncingQueue && (
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
+                  {pendingCount}
+                </span>
+              )}
             </button>
           )}
           <SignalBars strength={3} />

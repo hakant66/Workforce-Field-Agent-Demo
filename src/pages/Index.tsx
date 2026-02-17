@@ -9,6 +9,7 @@ import TranscriptPanel from "@/components/TranscriptPanel";
 import SummaryCard from "@/components/SummaryCard";
 import HistoryPanel, { saveJobToHistory } from "@/components/HistoryPanel";
 import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useSyncQueue } from "@/hooks/use-sync-queue";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 
@@ -42,6 +43,7 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const Index = () => {
   const isOnline = useOnlineStatus();
+  const { enqueue, isProcessing, pendingCount } = useSyncQueue();
   const [appState, setAppState] = useState<AppState>("idle");
   const [duration, setDuration] = useState(0);
   const [transcriptLines, setTranscriptLines] = useState<string[]>([]);
@@ -124,19 +126,12 @@ const Index = () => {
   }, []);
 
   const processAudio = useCallback(async (audioBlob: Blob) => {
-    // Offline path: save recording metadata locally
+    // Offline path: enqueue for later sync
     if (!isOnline) {
-      const pendingJobs = JSON.parse(localStorage.getItem("pendingJobs") || "[]");
-      pendingJobs.push({
-        id: crypto.randomUUID(),
-        timestamp: new Date().toISOString(),
-        audioBlobSize: audioBlob.size,
-        status: "Pending Sync",
-      });
-      localStorage.setItem("pendingJobs", JSON.stringify(pendingJobs));
+      enqueue(audioBlob);
       toast("You are offline — Job saved locally", {
         icon: <WifiOff className="w-4 h-4 text-yellow-400" />,
-        description: "It will be processed when you're back online.",
+        description: "It will be processed automatically when you're back online.",
       });
       setAppState("idle");
       return;
@@ -204,7 +199,7 @@ const Index = () => {
       toast.error(err instanceof Error ? err.message : "Processing failed");
       setAppState("idle");
     }
-  }, [isOnline]);
+  }, [isOnline, enqueue]);
 
   const handleToggleRecord = useCallback(async () => {
     if (appState === "idle" || appState === "result") {
@@ -265,7 +260,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} />
+      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} isSyncingQueue={isProcessing} pendingCount={pendingCount} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8">
         {/* Offline Banner */}

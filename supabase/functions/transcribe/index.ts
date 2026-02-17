@@ -24,21 +24,44 @@ serve(async (req) => {
       });
     }
 
-    // Read the raw bytes and reconstruct as a proper File with explicit type
+    // Read raw bytes from the uploaded file
     const arrayBuffer = await audioFile.arrayBuffer();
-    const properFile = new File([arrayBuffer], "recording.webm", {
-      type: "audio/webm",
-    });
+    const uint8 = new Uint8Array(arrayBuffer);
 
-    // Forward to OpenAI Whisper
-    const whisperForm = new FormData();
-    whisperForm.append("file", properFile, "recording.webm");
-    whisperForm.append("model", "whisper-1");
+    // Log debug info
+    console.log("Audio file size:", uint8.length, "original type:", audioFile.type, "original name:", audioFile.name);
+
+    // Build multipart/form-data manually to guarantee correct Content-Type on the file part
+    const boundary = "----WebKitFormBoundary" + crypto.randomUUID().replace(/-/g, "");
+    const encoder = new TextEncoder();
+
+    const filePart = [
+      `--${boundary}\r\n`,
+      `Content-Disposition: form-data; name="file"; filename="recording.webm"\r\n`,
+      `Content-Type: audio/webm\r\n\r\n`,
+    ];
+    const modelPart = [
+      `\r\n--${boundary}\r\n`,
+      `Content-Disposition: form-data; name="model"\r\n\r\n`,
+      `whisper-1`,
+      `\r\n--${boundary}--\r\n`,
+    ];
+
+    const filePartBytes = encoder.encode(filePart.join(""));
+    const modelPartBytes = encoder.encode(modelPart.join(""));
+
+    const body = new Uint8Array(filePartBytes.length + uint8.length + modelPartBytes.length);
+    body.set(filePartBytes, 0);
+    body.set(uint8, filePartBytes.length);
+    body.set(modelPartBytes, filePartBytes.length + uint8.length);
 
     const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: whisperForm,
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": `multipart/form-data; boundary=${boundary}`,
+      },
+      body: body,
     });
 
     if (!response.ok) {

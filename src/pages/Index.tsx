@@ -205,11 +205,19 @@ const Index = () => {
       setSyncing(false);
       setSynced(true);
       if (summary) {
+        const avgConfidence = confidenceData
+          ? Math.round(
+              [confidenceData.site?.confidence, confidenceData.asset?.confidence, confidenceData.description?.confidence, confidenceData.outcome?.confidence]
+                .filter((c): c is number => c != null)
+                .reduce((sum, c, _, arr) => sum + c / arr.length, 0)
+            )
+          : undefined;
         saveJobToHistory({
           site: summary.site,
           asset: summary.asset,
           outcome: summary.outcome,
           jobDescription: summary.jobDescription,
+          aiConfidence: avgConfidence,
         });
         toast.success("Job accepted and saved to history");
       }

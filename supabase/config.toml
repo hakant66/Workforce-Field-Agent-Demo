@@ -1,1 +1,7 @@
 project_id = "bpchcjpfxyzkzpgulgnc"
+
+[functions.transcribe]
+verify_jwt = false
+
+[functions.extract-details]
+verify_jwt = false

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
@@ -8,32 +9,28 @@ import SummaryCard from "@/components/SummaryCard";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 
-const demoTranscriptLines = [
-  "Arrived at Site 7B, north cooling tower.",
-  "Inspecting asset CT-204, centrifugal chiller unit.",
-  "Noticed abnormal vibration on the compressor shaft bearing.",
-  "Replaced worn coupling insert and re-aligned shaft.",
-  "Unit running within normal parameters after repair.",
-  "Job completed, ready for sign-off.",
-];
+interface SummaryData {
+  site: string;
+  asset: string;
+  jobDescription: string;
+  outcome: string;
+}
 
-const demoSummary = {
-  site: "Site 7B — North Cooling Tower",
-  asset: "CT-204 Centrifugal Chiller",
-  jobDescription:
-    "Compressor shaft bearing showed abnormal vibration. Replaced worn coupling insert and performed shaft re-alignment.",
-  outcome:
-    "Unit restored to normal operating parameters. No further action required.",
-};
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>("idle");
   const [duration, setDuration] = useState(0);
   const [transcriptLines, setTranscriptLines] = useState<string[]>([]);
+  const [summary, setSummary] = useState<SummaryData | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [synced, setSynced] = useState(false);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Duration counter
   useEffect(() => {
@@ -47,40 +44,124 @@ const Index = () => {
     };
   }, [appState]);
 
-  // Simulate transcript lines appearing during recording
-  useEffect(() => {
-    if (appState === "recording") {
-      let lineIndex = 0;
-      const addLine = () => {
-        if (lineIndex < demoTranscriptLines.length) {
-          setTranscriptLines((prev) => [...prev, demoTranscriptLines[lineIndex]]);
-          lineIndex++;
-          lineTimerRef.current = setTimeout(addLine, 1800 + Math.random() * 1200);
-        }
-      };
-      lineTimerRef.current = setTimeout(addLine, 1200);
-    }
-    return () => {
-      if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
-    };
-  }, [appState]);
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
 
-  const handleToggleRecord = useCallback(() => {
-    if (appState === "idle" || appState === "result") {
-      // Start recording
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/webm",
+      });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.start(1000); // collect chunks every second
+      mediaRecorderRef.current = mediaRecorder;
+
       setAppState("recording");
       setDuration(0);
       setTranscriptLines([]);
+      setSummary(null);
       setSynced(false);
       setSyncing(false);
-    } else if (appState === "recording") {
-      // Stop → processing
-      setAppState("processing");
-      setTimeout(() => {
-        setAppState("result");
-      }, 2500);
+    } catch (err) {
+      console.error("Microphone access error:", err);
+      toast.error("Could not access microphone. Please allow microphone permissions.");
     }
-  }, [appState]);
+  }, []);
+
+  const stopRecording = useCallback(async () => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (!mediaRecorder) return;
+
+    return new Promise<Blob>((resolve) => {
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        // Stop all tracks
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        mediaRecorderRef.current = null;
+        resolve(blob);
+      };
+      mediaRecorder.stop();
+    });
+  }, []);
+
+  const processAudio = useCallback(async (audioBlob: Blob) => {
+    setAppState("processing");
+
+    try {
+      // Step 1: Transcribe with Whisper
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "recording.webm");
+
+      const transcribeRes = await fetch(`${SUPABASE_URL}/functions/v1/transcribe`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+        body: formData,
+      });
+
+      if (!transcribeRes.ok) {
+        const err = await transcribeRes.json().catch(() => ({}));
+        throw new Error(err.error || "Transcription failed");
+      }
+
+      const { text } = await transcribeRes.json();
+      if (!text || text.trim().length === 0) {
+        throw new Error("No speech detected in the recording");
+      }
+
+      // Display transcript
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+      setTranscriptLines(sentences.map((s: string) => s.trim()));
+
+      // Step 2: Extract details with AI
+      const extractRes = await fetch(`${SUPABASE_URL}/functions/v1/extract-details`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ transcript: text }),
+      });
+
+      if (!extractRes.ok) {
+        const err = await extractRes.json().catch(() => ({}));
+        throw new Error(err.error || "Extraction failed");
+      }
+
+      const extracted = await extractRes.json();
+      setSummary({
+        site: extracted.site || "Unknown",
+        asset: extracted.asset || "Unknown",
+        jobDescription: extracted.description || "No description extracted",
+        outcome: extracted.outcome || "Unknown",
+      });
+      setAppState("result");
+    } catch (err) {
+      console.error("Processing error:", err);
+      toast.error(err instanceof Error ? err.message : "Processing failed");
+      setAppState("idle");
+    }
+  }, []);
+
+  const handleToggleRecord = useCallback(async () => {
+    if (appState === "idle" || appState === "result") {
+      await startRecording();
+    } else if (appState === "recording") {
+      const audioBlob = await stopRecording();
+      if (audioBlob) {
+        await processAudio(audioBlob);
+      }
+    }
+  }, [appState, startRecording, stopRecording, processAudio]);
 
   const handleSync = () => {
     setSyncing(true);
@@ -150,10 +231,10 @@ const Index = () => {
 
         {/* Summary Card */}
         <AnimatePresence>
-          {appState === "result" && (
+          {appState === "result" && summary && (
             <section className="mb-4">
               <SummaryCard
-                data={demoSummary}
+                data={summary}
                 onSync={handleSync}
                 syncing={syncing}
                 synced={synced}

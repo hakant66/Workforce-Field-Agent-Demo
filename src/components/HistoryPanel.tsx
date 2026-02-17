@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, MapPin, Wrench, Trash2 } from "lucide-react";
+import { History, X, MapPin, Wrench, Trash2, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface JobRecord {
@@ -9,6 +9,7 @@ export interface JobRecord {
   asset: string;
   outcome: string;
   jobDescription: string;
+  aiConfidence?: number;
   syncedAt: string;
 }
 
@@ -37,6 +38,37 @@ export function saveJobToHistory(job: Omit<JobRecord, "id" | "syncedAt">): JobRe
 
 export function clearJobHistory() {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+function escapeCsvField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+export function downloadJobHistoryCsv() {
+  const jobs = loadJobHistory();
+  if (jobs.length === 0) return;
+
+  const headers = ["Date", "Site", "Asset", "Description", "Outcome", "AI Confidence"];
+  const rows = jobs.map((job) => [
+    new Date(job.syncedAt).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" }),
+    escapeCsvField(job.site),
+    escapeCsvField(job.asset),
+    escapeCsvField(job.jobDescription),
+    escapeCsvField(job.outcome),
+    job.aiConfidence != null ? `${job.aiConfidence}%` : "N/A",
+  ]);
+
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Field_Service_Report.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 interface HistoryPanelProps {
@@ -87,13 +119,22 @@ export default function HistoryPanel({ open, onClose }: HistoryPanelProps) {
               </div>
               <div className="flex items-center gap-2">
                 {jobs.length > 0 && (
-                  <button
-                    onClick={handleClear}
-                    className="flex items-center gap-1 text-[10px] font-mono text-destructive/70 hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    Clear
-                  </button>
+                  <>
+                    <button
+                      onClick={() => downloadJobHistoryCsv()}
+                      className="flex items-center gap-1 text-[10px] font-mono text-primary/70 hover:text-primary transition-colors"
+                    >
+                      <Download className="w-3 h-3" />
+                      CSV
+                    </button>
+                    <button
+                      onClick={handleClear}
+                      className="flex items-center gap-1 text-[10px] font-mono text-destructive/70 hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Clear
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={onClose}

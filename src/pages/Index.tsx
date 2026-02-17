@@ -18,6 +18,19 @@ interface SummaryData {
   outcome: string;
 }
 
+interface FieldConfidence {
+  value: string;
+  confidence: number;
+  reasoning: string;
+}
+
+interface ConfidenceData {
+  site?: FieldConfidence;
+  asset?: FieldConfidence;
+  description?: FieldConfidence;
+  outcome?: FieldConfidence;
+}
+
 interface DebugData {
   rawTranscript: string;
   rawExtraction: Record<string, unknown>;
@@ -31,6 +44,7 @@ const Index = () => {
   const [duration, setDuration] = useState(0);
   const [transcriptLines, setTranscriptLines] = useState<string[]>([]);
   const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [confidenceData, setConfidenceData] = useState<ConfidenceData | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [synced, setSynced] = useState(false);
   const [devMode, setDevMode] = useState(false);
@@ -77,6 +91,7 @@ const Index = () => {
       setDuration(0);
       setTranscriptLines([]);
       setSummary(null);
+      setConfidenceData(null);
       setDebugData(null);
       setSynced(false);
       setSyncing(false);
@@ -147,6 +162,14 @@ const Index = () => {
       // Store debug data
       setDebugData({ rawTranscript: text, rawExtraction: extracted });
 
+      // Store confidence data
+      setConfidenceData({
+        site: extracted.site?.confidence != null ? extracted.site : undefined,
+        asset: extracted.asset?.confidence != null ? extracted.asset : undefined,
+        description: extracted.description?.confidence != null ? extracted.description : undefined,
+        outcome: extracted.outcome?.confidence != null ? extracted.outcome : undefined,
+      });
+
       setSummary({
         site: extracted.site?.value || extracted.site || "Unknown",
         asset: extracted.asset?.value || extracted.asset || "Unknown",
@@ -172,7 +195,7 @@ const Index = () => {
     }
   }, [appState, startRecording, stopRecording, processAudio]);
 
-  const handleSync = () => {
+  const handleAccept = () => {
     setSyncing(true);
     setTimeout(() => {
       setSyncing(false);
@@ -184,9 +207,21 @@ const Index = () => {
           outcome: summary.outcome,
           jobDescription: summary.jobDescription,
         });
-        toast.success("Job saved to history");
+        toast.success("Job accepted and saved to history");
       }
     }, 2000);
+  };
+
+  const handleDelete = () => {
+    setSummary(null);
+    setConfidenceData(null);
+    setAppState("idle");
+    toast("Job discarded");
+  };
+
+  const handleUpdate = (updated: SummaryData) => {
+    setSummary(updated);
+    toast.success("Job details updated");
   };
 
   return (
@@ -251,7 +286,10 @@ const Index = () => {
             <section className="mb-4">
               <SummaryCard
                 data={summary}
-                onSync={handleSync}
+                confidence={confidenceData || undefined}
+                onAccept={handleAccept}
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
                 syncing={syncing}
                 synced={synced}
               />

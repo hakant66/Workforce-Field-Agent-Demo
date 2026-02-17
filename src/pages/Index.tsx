@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Code, ChevronDown, ChevronUp } from "lucide-react";
+import { Code, ChevronDown, ChevronUp, History } from "lucide-react";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
 import TranscriptPanel from "@/components/TranscriptPanel";
 import SummaryCard from "@/components/SummaryCard";
+import HistoryPanel, { saveJobToHistory } from "@/components/HistoryPanel";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 
@@ -34,6 +35,7 @@ const Index = () => {
   const [synced, setSynced] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [debugData, setDebugData] = useState<DebugData | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -175,12 +177,21 @@ const Index = () => {
     setTimeout(() => {
       setSyncing(false);
       setSynced(true);
+      if (summary) {
+        saveJobToHistory({
+          site: summary.site,
+          asset: summary.asset,
+          outcome: summary.outcome,
+          jobDescription: summary.jobDescription,
+        });
+        toast.success("Job saved to history");
+      }
     }, 2000);
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <FieldHeader />
+      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8">
         {/* Recording Area */}
@@ -299,6 +310,8 @@ const Index = () => {
           </AnimatePresence>
         </section>
       </main>
+
+      <HistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { Code, ChevronDown, ChevronUp } from "lucide-react";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
@@ -16,6 +17,11 @@ interface SummaryData {
   outcome: string;
 }
 
+interface DebugData {
+  rawTranscript: string;
+  rawExtraction: Record<string, unknown>;
+}
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -26,6 +32,8 @@ const Index = () => {
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [synced, setSynced] = useState(false);
+  const [devMode, setDevMode] = useState(false);
+  const [debugData, setDebugData] = useState<DebugData | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -60,13 +68,14 @@ const Index = () => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
-      mediaRecorder.start(1000); // collect chunks every second
+      mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
 
       setAppState("recording");
       setDuration(0);
       setTranscriptLines([]);
       setSummary(null);
+      setDebugData(null);
       setSynced(false);
       setSyncing(false);
     } catch (err) {
@@ -82,7 +91,6 @@ const Index = () => {
     return new Promise<Blob>((resolve) => {
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        // Stop all tracks
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         mediaRecorderRef.current = null;
@@ -96,15 +104,12 @@ const Index = () => {
     setAppState("processing");
 
     try {
-      // Step 1: Transcribe with Whisper
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
 
       const transcribeRes = await fetch(`${SUPABASE_URL}/functions/v1/transcribe`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
+        headers: { Authorization: `Bearer ${SUPABASE_KEY}` },
         body: formData,
       });
 
@@ -118,11 +123,9 @@ const Index = () => {
         throw new Error("No speech detected in the recording");
       }
 
-      // Display transcript
       const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
       setTranscriptLines(sentences.map((s: string) => s.trim()));
 
-      // Step 2: Extract details with AI
       const extractRes = await fetch(`${SUPABASE_URL}/functions/v1/extract-details`, {
         method: "POST",
         headers: {
@@ -138,6 +141,10 @@ const Index = () => {
       }
 
       const extracted = await extractRes.json();
+
+      // Store debug data
+      setDebugData({ rawTranscript: text, rawExtraction: extracted });
+
       setSummary({
         site: extracted.site || "Unknown",
         asset: extracted.asset || "Unknown",
@@ -186,7 +193,6 @@ const Index = () => {
             duration={duration}
           />
 
-          {/* Status Text */}
           <motion.p
             key={appState}
             initial={{ opacity: 0, y: 4 }}
@@ -199,7 +205,6 @@ const Index = () => {
             {appState === "result" && "Tap microphone to record again."}
           </motion.p>
 
-          {/* Processing State */}
           <AnimatePresence>
             {appState === "processing" && (
               <motion.div
@@ -242,6 +247,57 @@ const Index = () => {
             </section>
           )}
         </AnimatePresence>
+
+        {/* Developer Mode Toggle */}
+        <section className="mt-8 mb-4">
+          <button
+            onClick={() => setDevMode((v) => !v)}
+            className="w-full flex items-center justify-center gap-2 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          >
+            <Code className="w-3 h-3" />
+            Developer Mode
+            {devMode ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          <AnimatePresence>
+            {devMode && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-3 pt-2">
+                  {/* Raw Transcript */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-2 border-b border-border bg-secondary/50">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-semibold">
+                        Raw Transcript (Whisper)
+                      </span>
+                    </div>
+                    <pre className="p-4 text-xs font-mono text-muted-foreground whitespace-pre-wrap max-h-48 overflow-auto">
+                      {debugData?.rawTranscript || "No data yet. Record something first."}
+                    </pre>
+                  </div>
+
+                  {/* Raw JSON */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-2 border-b border-border bg-secondary/50">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-semibold">
+                        Raw JSON (AI Extraction)
+                      </span>
+                    </div>
+                    <pre className="p-4 text-xs font-mono text-muted-foreground whitespace-pre-wrap max-h-48 overflow-auto">
+                      {debugData?.rawExtraction
+                        ? JSON.stringify(debugData.rawExtraction, null, 2)
+                        : "No data yet. Record something first."}
+                    </pre>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
       </main>
     </div>
   );

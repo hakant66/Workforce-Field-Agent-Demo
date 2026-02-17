@@ -47,6 +47,8 @@ const Index = () => {
   const [confidenceData, setConfidenceData] = useState<ConfidenceData | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [synced, setSynced] = useState(false);
+  const [syncingCRM, setSyncingCRM] = useState(false);
+  const [syncedCRM, setSyncedCRM] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [debugData, setDebugData] = useState<DebugData | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -94,6 +96,8 @@ const Index = () => {
       setConfidenceData(null);
       setDebugData(null);
       setSynced(false);
+      setSyncingCRM(false);
+      setSyncedCRM(false);
       setSyncing(false);
     } catch (err) {
       console.error("Microphone access error:", err);
@@ -224,6 +228,15 @@ const Index = () => {
     toast.success("Job details updated");
   };
 
+  const handleSyncCRM = () => {
+    setSyncingCRM(true);
+    setTimeout(() => {
+      setSyncingCRM(false);
+      setSyncedCRM(true);
+      toast.success("Job synced to CRM");
+    }, 2000);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <FieldHeader onHistoryClick={() => setHistoryOpen(true)} />
@@ -290,8 +303,11 @@ const Index = () => {
                 onAccept={handleAccept}
                 onDelete={handleDelete}
                 onUpdate={handleUpdate}
+                onSyncCRM={handleSyncCRM}
                 syncing={syncing}
                 synced={synced}
+                syncingCRM={syncingCRM}
+                syncedCRM={syncedCRM}
               />
             </section>
           )}

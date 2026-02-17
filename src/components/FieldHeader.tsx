@@ -1,6 +1,10 @@
-import { Signal, Wifi, Battery } from "lucide-react";
+import { Signal, Wifi, Battery, History } from "lucide-react";
 
-export default function FieldHeader() {
+interface FieldHeaderProps {
+  onHistoryClick?: () => void;
+}
+
+export default function FieldHeader({ onHistoryClick }: FieldHeaderProps) {
   return (
     <header className="bg-header-bg border-b border-header-border sticky top-0 z-30 overflow-hidden">
       {/* Scan line effect */}
@@ -32,6 +36,15 @@ export default function FieldHeader() {
 
         {/* Signal Strength Indicator */}
         <div className="flex items-center gap-3">
+          {onHistoryClick && (
+            <button
+              onClick={onHistoryClick}
+              className="p-1.5 rounded hover:bg-secondary transition-colors"
+              title="Job History"
+            >
+              <History className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+            </button>
+          )}
           <SignalBars strength={3} />
           <div className="flex items-center gap-1 text-muted-foreground">
             <Wifi className="w-3.5 h-3.5 text-signal" />

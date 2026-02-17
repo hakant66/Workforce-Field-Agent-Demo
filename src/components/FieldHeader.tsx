@@ -1,4 +1,5 @@
 import { Signal, Wifi, Battery, History } from "lucide-react";
+import ckdeltaLogo from "@/assets/ckdelta-logo.png";
 
 interface FieldHeaderProps {
   onHistoryClick?: () => void;
@@ -19,9 +20,7 @@ export default function FieldHeader({ onHistoryClick }: FieldHeaderProps) {
         {/* Logo / Title */}
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-9 h-9 rounded bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <span className="text-primary font-bold text-sm font-mono">Δ</span>
-            </div>
+            <img src={ckdeltaLogo} alt="CKDelta logo" className="w-9 h-9 rounded object-contain" />
             <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-signal animate-pulse" />
           </div>
           <div>
@@ -29,7 +28,7 @@ export default function FieldHeader({ onHistoryClick }: FieldHeaderProps) {
               Workforce Field Agent
             </h1>
             <p className="text-[10px] text-muted-foreground font-mono tracking-widest">
-              DELTA SYSTEMS v2.4
+              CKDelta v2.4
             </p>
           </div>
         </div>

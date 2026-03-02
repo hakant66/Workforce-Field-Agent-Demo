@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw } from "lucide-react";
+import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw, Send, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 export interface JobRecord {
   id: string;
@@ -11,6 +12,7 @@ export interface JobRecord {
   jobDescription: string;
   aiConfidence?: number;
   syncedAt: string;
+  erpSynced?: boolean;
 }
 
 const STORAGE_KEY = "workforce-job-history";

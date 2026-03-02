@@ -279,26 +279,16 @@ const Index = () => {
                 .reduce((sum, c, _, arr) => sum + c / arr.length, 0)
             )
           : undefined;
-        saveJobToHistory({
+        const savedJob = saveJobToHistory({
           site: summary.site,
           asset: summary.asset,
           outcome: summary.outcome,
           jobDescription: summary.jobDescription,
           aiConfidence: avgConfidence,
         });
+        setEditingJobId(savedJob.id);
         toast.success("Job accepted and saved to history");
         refreshUnsyncedCount();
-        // Return to main menu after a brief delay
-        setTimeout(() => {
-          setSummary(null);
-          setConfidenceData(null);
-          setTranscriptLines([]);
-          setDebugData(null);
-          setSynced(false);
-          setSyncedCRM(false);
-          setEditingJobId(null);
-          setAppState("idle");
-        }, 1200);
       }
     }, 2000);
   };

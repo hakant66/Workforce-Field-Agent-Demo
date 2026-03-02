@@ -18,7 +18,7 @@ const formatDuration = (seconds: number) => {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 
-export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount, isRecording, recordingDuration = 0 }: FieldHeaderProps) {
+export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount, isRecording, recordingDuration = 0, theme, onToggleTheme }: FieldHeaderProps) {
   return (
     <header className={`border-b sticky top-0 z-30 overflow-hidden transition-colors duration-300 ${isRecording ? "bg-recording/10 border-recording/30" : "bg-header-bg border-header-border"}`}>
       {/* Scan line effect */}

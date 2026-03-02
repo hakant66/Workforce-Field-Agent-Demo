@@ -281,7 +281,7 @@ export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncin
                                 ) : (
                                   <Send className="w-3 h-3" />
                                 )}
-                                {syncingJobId === job.id ? "Syncing..." : "Sync to ERP"}
+                                {syncingJobId === job.id ? "Syncing..." : "Ready to Sync to ERP"}
                               </button>
                               {onEditJob && (
                                 <button

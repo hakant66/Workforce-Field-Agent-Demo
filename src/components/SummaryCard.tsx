@@ -285,7 +285,7 @@ export default function SummaryCard({ data, confidence, isOnline = true, onAccep
                     {isOnline ? (
                       <>
                         <Send className="w-4 h-4" />
-                        Sync to ERP
+                        Ready to Sync to ERP
                       </>
                     ) : (
                       <>

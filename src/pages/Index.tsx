@@ -34,10 +34,41 @@ interface ConfidenceData {
   outcome?: FieldConfidence;
 }
 
+interface GpsData {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  altitude: number;
+  timestamp: string;
+}
+
 interface DebugData {
   rawTranscript: string;
   rawExtraction: Record<string, unknown>;
+  gps: GpsData;
 }
+
+const generateFictiveGps = (): GpsData => {
+  // Random coordinates around industrial areas worldwide
+  const bases = [
+    { lat: 51.5074, lng: -0.1278 },   // London
+    { lat: 52.2297, lng: 21.0122 },   // Warsaw
+    { lat: 40.4168, lng: -3.7038 },   // Madrid
+    { lat: 48.8566, lng: 2.3522 },    // Paris
+    { lat: 53.3498, lng: -6.2603 },   // Dublin
+    { lat: 59.3293, lng: 18.0686 },   // Stockholm
+    { lat: 45.4642, lng: 9.1900 },    // Milan
+    { lat: 50.0755, lng: 14.4378 },   // Prague
+  ];
+  const base = bases[Math.floor(Math.random() * bases.length)];
+  return {
+    latitude: +(base.lat + (Math.random() - 0.5) * 0.1).toFixed(6),
+    longitude: +(base.lng + (Math.random() - 0.5) * 0.1).toFixed(6),
+    accuracy: +(3 + Math.random() * 15).toFixed(1),
+    altitude: +(10 + Math.random() * 200).toFixed(1),
+    timestamp: new Date().toISOString(),
+  };
+};
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;

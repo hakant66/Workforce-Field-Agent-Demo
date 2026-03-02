@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Code, ChevronDown, ChevronUp, WifiOff, Send } from "lucide-react";
+import { Code, ChevronDown, ChevronUp, WifiOff, Send, Mic } from "lucide-react";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
@@ -11,6 +11,7 @@ import HistoryPanel, { saveJobToHistory, loadJobHistory, updateJobInHistory, typ
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
 import { useTheme } from "@/hooks/use-theme";
+import { useWakeWord } from "@/hooks/use-wake-word";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 
@@ -91,6 +92,7 @@ const Index = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [unsyncedErpCount, setUnsyncedErpCount] = useState(0);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
+  const startRecordingRef = useRef<(() => Promise<void>) | null>(null);
 
   // Track unsynced ERP jobs
   const refreshUnsyncedCount = useCallback(() => {
@@ -193,6 +195,20 @@ const Index = () => {
       toast.error("Could not access microphone. Please allow microphone permissions.");
     }
   }, []);
+
+  // Keep ref in sync for wake word callback
+  startRecordingRef.current = startRecording;
+
+  // Wake word: "Hi Neo" triggers recording
+  const { enabled: wakeWordEnabled, listening: wakeWordListening, toggleEnabled: toggleWakeWord, isSupported: wakeWordSupported } = useWakeWord({
+    onWakeWord: () => {
+      if (startRecordingRef.current) {
+        toast("👋 Hi Neo! Starting recording...");
+        startRecordingRef.current();
+      }
+    },
+    disabled: appState === "recording" || appState === "processing",
+  });
 
   const stopRecording = useCallback(async () => {
     const mediaRecorder = mediaRecorderRef.current;
@@ -490,11 +506,26 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-sm text-muted-foreground text-center mt-2 font-mono"
           >
-            {appState === "idle" && "Ready to record."}
+            {appState === "idle" && (wakeWordListening ? 'Say "Hi Neo" to start recording.' : "Ready to record.")}
             {appState === "recording" && "Recording — tap to stop."}
             {appState === "processing" && ""}
             {appState === "result" && "Tap microphone to record again."}
           </motion.p>
+
+          {/* Wake word toggle */}
+          {wakeWordSupported && appState !== "recording" && appState !== "processing" && (
+            <button
+              onClick={toggleWakeWord}
+              className={`mt-2 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono transition-colors border ${
+                wakeWordEnabled
+                  ? "bg-primary/10 border-primary/30 text-primary"
+                  : "bg-secondary border-border text-muted-foreground"
+              }`}
+            >
+              <Mic className="w-3 h-3" />
+              {wakeWordEnabled ? '"Hi Neo" listening' : '"Hi Neo" off'}
+            </button>
+          )}
 
           <AnimatePresence>
             {appState === "processing" && (

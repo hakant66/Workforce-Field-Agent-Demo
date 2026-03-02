@@ -285,6 +285,7 @@ const Index = () => {
           aiConfidence: avgConfidence,
         });
         toast.success("Job accepted and saved to history");
+        refreshUnsyncedCount();
       }
     }, 2000);
   };

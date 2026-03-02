@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Code, ChevronDown, ChevronUp, WifiOff } from "lucide-react";
+import { Code, ChevronDown, ChevronUp, WifiOff, Send } from "lucide-react";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";

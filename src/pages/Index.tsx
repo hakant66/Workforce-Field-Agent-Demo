@@ -58,6 +58,17 @@ const Index = () => {
   const [devMode, setDevMode] = useState(false);
   const [debugData, setDebugData] = useState<DebugData | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [unsyncedErpCount, setUnsyncedErpCount] = useState(0);
+
+  // Track unsynced ERP jobs
+  const refreshUnsyncedCount = useCallback(() => {
+    const jobs = loadJobHistory();
+    setUnsyncedErpCount(jobs.filter((j) => !j.erpSynced).length);
+  }, []);
+
+  useEffect(() => {
+    refreshUnsyncedCount();
+  }, [refreshUnsyncedCount]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);

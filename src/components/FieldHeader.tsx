@@ -6,11 +6,19 @@ interface FieldHeaderProps {
   onHistoryClick?: () => void;
   isSyncingQueue?: boolean;
   pendingCount?: number;
+  isRecording?: boolean;
+  recordingDuration?: number;
 }
 
-export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount }: FieldHeaderProps) {
+const formatDuration = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+};
+
+export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount, isRecording, recordingDuration = 0 }: FieldHeaderProps) {
   return (
-    <header className="bg-header-bg border-b border-header-border sticky top-0 z-30 overflow-hidden">
+    <header className={`border-b sticky top-0 z-30 overflow-hidden transition-colors duration-300 ${isRecording ? "bg-recording/10 border-recording/30" : "bg-header-bg border-header-border"}`}>
       {/* Scan line effect */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]">
         <div
@@ -37,6 +45,26 @@ export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCou
 
         {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* Recording indicator */}
+          <AnimatePresence>
+            {isRecording && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-recording/15 border border-recording/30 overflow-hidden"
+              >
+                <motion.div
+                  className="w-2 h-2 rounded-full bg-recording"
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
+                <span className="text-[10px] font-mono text-recording font-semibold whitespace-nowrap tracking-wider">
+                  REC {formatDuration(recordingDuration)}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* Queue syncing indicator */}
           <AnimatePresence>
             {isSyncingQueue && (

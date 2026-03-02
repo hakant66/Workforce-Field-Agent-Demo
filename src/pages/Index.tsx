@@ -62,6 +62,25 @@ const Index = () => {
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Update document title during recording
+  useEffect(() => {
+    if (appState === "recording") {
+      document.title = `🔴 Recording — Field Service`;
+    } else {
+      document.title = "Field Service Audio to Text";
+    }
+  }, [appState]);
+
+  // Warn before navigating away during recording
+  useEffect(() => {
+    if (appState !== "recording") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [appState]);
+
   // Duration counter
   useEffect(() => {
     if (appState === "recording") {
@@ -260,7 +279,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} isSyncingQueue={isProcessing} pendingCount={pendingCount} />
+      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} isSyncingQueue={isProcessing} pendingCount={pendingCount} isRecording={appState === "recording"} recordingDuration={duration} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8">
         {/* Offline Banner */}

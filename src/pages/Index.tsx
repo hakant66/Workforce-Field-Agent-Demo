@@ -288,6 +288,17 @@ const Index = () => {
         });
         toast.success("Job accepted and saved to history");
         refreshUnsyncedCount();
+        // Return to main menu after a brief delay
+        setTimeout(() => {
+          setSummary(null);
+          setConfidenceData(null);
+          setTranscriptLines([]);
+          setDebugData(null);
+          setSynced(false);
+          setSyncedCRM(false);
+          setEditingJobId(null);
+          setAppState("idle");
+        }, 1200);
       }
     }, 2000);
   };

@@ -60,7 +60,24 @@ const Index = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
+  // Update document title during recording
+  useEffect(() => {
+    if (appState === "recording") {
+      document.title = `🔴 Recording — Field Service`;
+    } else {
+      document.title = "Field Service Audio to Text";
+    }
+  }, [appState]);
+
+  // Warn before navigating away during recording
+  useEffect(() => {
+    if (appState !== "recording") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [appState]);
 
   // Duration counter
   useEffect(() => {

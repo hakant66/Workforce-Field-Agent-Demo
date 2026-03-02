@@ -81,6 +81,26 @@ const Index = () => {
     return () => window.removeEventListener("beforeunload", handler);
   }, [appState]);
 
+  // Wake Lock: prevent screen from auto-locking during recording
+  useEffect(() => {
+    if (appState !== "recording") return;
+    let wakeLock: WakeLockSentinel | null = null;
+    const requestLock = async () => {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await navigator.wakeLock.request("screen");
+          console.log("Wake Lock acquired");
+        }
+      } catch (err) {
+        console.warn("Wake Lock request failed:", err);
+      }
+    };
+    requestLock();
+    return () => {
+      wakeLock?.release().then(() => console.log("Wake Lock released"));
+    };
+  }, [appState]);
+
   // Duration counter
   useEffect(() => {
     if (appState === "recording") {

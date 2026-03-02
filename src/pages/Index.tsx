@@ -1,13 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Code, ChevronDown, ChevronUp, WifiOff } from "lucide-react";
+import { Code, ChevronDown, ChevronUp, WifiOff, Send } from "lucide-react";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
 import TranscriptPanel from "@/components/TranscriptPanel";
 import SummaryCard from "@/components/SummaryCard";
-import HistoryPanel, { saveJobToHistory, type JobRecord } from "@/components/HistoryPanel";
+import HistoryPanel, { saveJobToHistory, loadJobHistory, type JobRecord } from "@/components/HistoryPanel";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
 import { useTheme } from "@/hooks/use-theme";
@@ -58,6 +58,17 @@ const Index = () => {
   const [devMode, setDevMode] = useState(false);
   const [debugData, setDebugData] = useState<DebugData | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [unsyncedErpCount, setUnsyncedErpCount] = useState(0);
+
+  // Track unsynced ERP jobs
+  const refreshUnsyncedCount = useCallback(() => {
+    const jobs = loadJobHistory();
+    setUnsyncedErpCount(jobs.filter((j) => !j.erpSynced).length);
+  }, []);
+
+  useEffect(() => {
+    refreshUnsyncedCount();
+  }, [refreshUnsyncedCount]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -274,6 +285,7 @@ const Index = () => {
           aiConfidence: avgConfidence,
         });
         toast.success("Job accepted and saved to history");
+        refreshUnsyncedCount();
       }
     }, 2000);
   };
@@ -357,7 +369,22 @@ const Index = () => {
           )}
         </AnimatePresence>
 
-        {/* Recording Area */}
+        {/* Unsynced ERP Banner */}
+        <AnimatePresence>
+          {unsyncedErpCount > 0 && appState !== "recording" && (
+            <motion.button
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              onClick={() => setHistoryOpen(true)}
+              className="mb-4 w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-sm font-mono hover:bg-primary/15 transition-colors"
+            >
+              <Send className="w-4 h-4 shrink-0" />
+              You have {unsyncedErpCount} record{unsyncedErpCount > 1 ? "s" : ""} to sync to ERP
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         <section className="py-10 flex flex-col items-center gap-4">
           <AudioWaveform active={appState === "recording"} />
 
@@ -483,7 +510,7 @@ const Index = () => {
 
       <HistoryPanel
         open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
+        onClose={() => { setHistoryOpen(false); refreshUnsyncedCount(); }}
         pendingCount={pendingCount}
         isSyncingQueue={isProcessing}
         onSyncNow={processQueue}
@@ -494,6 +521,7 @@ const Index = () => {
             jobDescription: job.jobDescription,
             outcome: job.outcome,
           });
+          refreshUnsyncedCount();
         }}
       />
     </div>

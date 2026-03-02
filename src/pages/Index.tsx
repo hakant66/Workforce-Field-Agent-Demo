@@ -591,6 +591,20 @@ const Index = () => {
                         : "No data yet. Record something first."}
                     </pre>
                   </div>
+
+                  {/* GPS Data */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-2 border-b border-border bg-secondary/50">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-semibold">
+                        GPS Data (Simulated)
+                      </span>
+                    </div>
+                    <pre className="p-4 text-xs font-mono text-muted-foreground whitespace-pre-wrap max-h-48 overflow-auto">
+                      {debugData?.gps
+                        ? JSON.stringify(debugData.gps, null, 2)
+                        : "No data yet. Record something first."}
+                    </pre>
+                  </div>
                 </div>
               </motion.div>
             )}

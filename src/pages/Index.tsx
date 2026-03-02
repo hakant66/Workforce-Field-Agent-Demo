@@ -487,6 +487,14 @@ const Index = () => {
         pendingCount={pendingCount}
         isSyncingQueue={isProcessing}
         onSyncNow={processQueue}
+        onSyncJobToERP={async (job: JobRecord) => {
+          await syncToERP({
+            site: job.site,
+            asset: job.asset,
+            jobDescription: job.jobDescription,
+            outcome: job.outcome,
+          });
+        }}
       />
     </div>
   );

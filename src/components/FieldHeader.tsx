@@ -98,6 +98,19 @@ export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCou
               )}
             </button>
           )}
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              className="p-1.5 rounded hover:bg-secondary transition-colors"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+              ) : (
+                <Moon className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+              )}
+            </button>
+          )}
           <SignalBars strength={3} />
           <div className="flex items-center gap-1 text-muted-foreground">
             <Wifi className="w-3.5 h-3.5 text-signal" />

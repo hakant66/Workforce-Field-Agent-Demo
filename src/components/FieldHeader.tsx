@@ -10,9 +10,15 @@ interface FieldHeaderProps {
   recordingDuration?: number;
 }
 
-export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount }: FieldHeaderProps) {
+const formatDuration = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+};
+
+export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount, isRecording, recordingDuration = 0 }: FieldHeaderProps) {
   return (
-    <header className="bg-header-bg border-b border-header-border sticky top-0 z-30 overflow-hidden">
+    <header className={`border-b sticky top-0 z-30 overflow-hidden transition-colors duration-300 ${isRecording ? "bg-recording/10 border-recording/30" : "bg-header-bg border-header-border"}`}>
       {/* Scan line effect */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]">
         <div

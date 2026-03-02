@@ -10,6 +10,7 @@ import SummaryCard from "@/components/SummaryCard";
 import HistoryPanel, { saveJobToHistory } from "@/components/HistoryPanel";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
+import { useTheme } from "@/hooks/use-theme";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 

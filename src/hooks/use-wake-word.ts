@@ -15,20 +15,21 @@ export function useWakeWord({
 }: UseWakeWordOptions) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [listening, setListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const onWakeWordRef = useRef(onWakeWord);
   onWakeWordRef.current = onWakeWord;
 
-  const isSupported =
-    typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const SpeechRecognitionClass =
+    typeof window !== "undefined"
+      ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      : null;
+
+  const isSupported = !!SpeechRecognitionClass;
 
   const startListening = useCallback(() => {
-    if (!isSupported || recognitionRef.current) return;
+    if (!SpeechRecognitionClass || recognitionRef.current) return;
 
-    const SpeechRecognition =
-      window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionClass();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";

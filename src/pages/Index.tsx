@@ -92,6 +92,7 @@ const Index = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [unsyncedErpCount, setUnsyncedErpCount] = useState(0);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
+  const startRecordingRef = useRef<(() => Promise<void>) | null>(null);
 
   // Track unsynced ERP jobs
   const refreshUnsyncedCount = useCallback(() => {

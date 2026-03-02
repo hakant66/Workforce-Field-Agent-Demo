@@ -79,10 +79,18 @@ interface HistoryPanelProps {
   pendingCount?: number;
   isSyncingQueue?: boolean;
   onSyncNow?: () => void;
+  onSyncJobToERP?: (job: JobRecord) => Promise<void>;
 }
 
-export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow }: HistoryPanelProps) {
+export function markJobErpSynced(jobId: string) {
+  const history = loadJobHistory();
+  const updated = history.map((j) => (j.id === jobId ? { ...j, erpSynced: true } : j));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}
+
+export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow, onSyncJobToERP }: HistoryPanelProps) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) setJobs(loadJobHistory());

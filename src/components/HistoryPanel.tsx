@@ -101,6 +101,21 @@ export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncin
     setJobs([]);
   };
 
+  const handleSyncJob = async (job: JobRecord) => {
+    if (!onSyncJobToERP) return;
+    setSyncingJobId(job.id);
+    try {
+      await onSyncJobToERP(job);
+      markJobErpSynced(job.id);
+      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, erpSynced: true } : j)));
+      toast.success(`Job at ${job.site} synced to ERP`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "ERP sync failed");
+    } finally {
+      setSyncingJobId(null);
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && (

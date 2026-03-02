@@ -45,6 +45,26 @@ export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCou
 
         {/* Right section */}
         <div className="flex items-center gap-3">
+          {/* Recording indicator */}
+          <AnimatePresence>
+            {isRecording && (
+              <motion.div
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-recording/15 border border-recording/30 overflow-hidden"
+              >
+                <motion.div
+                  className="w-2 h-2 rounded-full bg-recording"
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
+                <span className="text-[10px] font-mono text-recording font-semibold whitespace-nowrap tracking-wider">
+                  REC {formatDuration(recordingDuration)}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* Queue syncing indicator */}
           <AnimatePresence>
             {isSyncingQueue && (

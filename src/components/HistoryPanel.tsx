@@ -95,7 +95,7 @@ export function markJobErpSynced(jobId: string) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }
 
-export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow, onSyncJobToERP }: HistoryPanelProps) {
+export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow, onSyncJobToERP, onEditJob }: HistoryPanelProps) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Code, ChevronDown, ChevronUp, WifiOff, Send } from "lucide-react";
+import { Code, ChevronDown, ChevronUp, WifiOff, Send, Mic } from "lucide-react";
 import FieldHeader from "@/components/FieldHeader";
 import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
@@ -11,6 +11,7 @@ import HistoryPanel, { saveJobToHistory, loadJobHistory, updateJobInHistory, typ
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
 import { useTheme } from "@/hooks/use-theme";
+import { useWakeWord } from "@/hooks/use-wake-word";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 

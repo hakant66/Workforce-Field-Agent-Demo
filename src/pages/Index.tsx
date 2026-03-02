@@ -454,7 +454,7 @@ const Index = () => {
               className="mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 text-sm font-mono"
             >
               <WifiOff className="w-4 h-4 shrink-0" />
-              You are offline — recordings will be saved locally
+              {simulatedOffline ? "Simulated offline mode (F10 to toggle)" : "You are offline — recordings will be saved locally"}
             </motion.div>
           )}
         </AnimatePresence>

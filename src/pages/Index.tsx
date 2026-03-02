@@ -277,7 +277,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} isSyncingQueue={isProcessing} pendingCount={pendingCount} />
+      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} isSyncingQueue={isProcessing} pendingCount={pendingCount} isRecording={appState === "recording"} recordingDuration={duration} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8">
         {/* Offline Banner */}

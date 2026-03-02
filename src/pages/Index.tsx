@@ -196,6 +196,20 @@ const Index = () => {
     }
   }, []);
 
+  // Keep ref in sync for wake word callback
+  startRecordingRef.current = startRecording;
+
+  // Wake word: "Hi Neo" triggers recording
+  const { enabled: wakeWordEnabled, listening: wakeWordListening, toggleEnabled: toggleWakeWord, isSupported: wakeWordSupported } = useWakeWord({
+    onWakeWord: () => {
+      if (startRecordingRef.current) {
+        toast("👋 Hi Neo! Starting recording...");
+        startRecordingRef.current();
+      }
+    },
+    disabled: appState === "recording" || appState === "processing",
+  });
+
   const stopRecording = useCallback(async () => {
     const mediaRecorder = mediaRecorderRef.current;
     if (!mediaRecorder) return;

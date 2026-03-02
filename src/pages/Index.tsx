@@ -45,6 +45,7 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const Index = () => {
   const isOnline = useOnlineStatus();
   const { enqueue, isProcessing, pendingCount, processQueue } = useSyncQueue();
+  const { theme, toggleTheme } = useTheme();
   const [appState, setAppState] = useState<AppState>("idle");
   const [duration, setDuration] = useState(0);
   const [transcriptLines, setTranscriptLines] = useState<string[]>([]);

@@ -270,18 +270,29 @@ export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncin
                               <Send className="w-3 h-3" /> Synced to ERP
                             </span>
                           ) : (
-                            <button
-                              onClick={() => handleSyncJob(job)}
-                              disabled={syncingJobId === job.id}
-                              className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
-                            >
-                              {syncingJobId === job.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Send className="w-3 h-3" />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleSyncJob(job)}
+                                disabled={syncingJobId === job.id}
+                                className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                              >
+                                {syncingJobId === job.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Send className="w-3 h-3" />
+                                )}
+                                {syncingJobId === job.id ? "Syncing..." : "Sync to ERP"}
+                              </button>
+                              {onEditJob && (
+                                <button
+                                  onClick={() => onEditJob(job)}
+                                  className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-secondary text-foreground border border-border hover:bg-secondary/80 transition-colors"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  Edit
+                                </button>
                               )}
-                              {syncingJobId === job.id ? "Syncing..." : "Sync to ERP"}
-                            </button>
+                            </div>
                           )}
                         </div>
                       )}

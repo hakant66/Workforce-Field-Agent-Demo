@@ -80,6 +80,13 @@ interface HistoryPanelProps {
   isSyncingQueue?: boolean;
   onSyncNow?: () => void;
   onSyncJobToERP?: (job: JobRecord) => Promise<void>;
+  onEditJob?: (job: JobRecord) => void;
+}
+
+export function updateJobInHistory(updatedJob: JobRecord) {
+  const history = loadJobHistory();
+  const updated = history.map((j) => (j.id === updatedJob.id ? updatedJob : j));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }
 
 export function markJobErpSynced(jobId: string) {

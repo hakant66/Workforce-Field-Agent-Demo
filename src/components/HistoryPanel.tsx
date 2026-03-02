@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw, Send, Loader2 } from "lucide-react";
+import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw, Send, Loader2, Pencil } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 

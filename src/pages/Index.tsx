@@ -156,6 +156,7 @@ const Index = () => {
       setSyncingCRM(false);
       setSyncedCRM(false);
       setSyncing(false);
+      setEditingJobId(null);
     } catch (err) {
       console.error("Microphone access error:", err);
       toast.error("Could not access microphone. Please allow microphone permissions.");

@@ -1,4 +1,4 @@
-import { Signal, Wifi, Battery, History, Loader2 } from "lucide-react";
+import { Signal, Wifi, Battery, History, Loader2, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ckdeltaLogo from "@/assets/ckdelta-logo.png";
 

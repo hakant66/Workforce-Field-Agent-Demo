@@ -285,24 +285,6 @@ const Index = () => {
     toast("Job discarded");
   };
 
-  const handleUpdate = useCallback(async (updated: SummaryData) => {
-    setSummary(updated);
-    if (syncedCRM) {
-      // Re-sync updated data to ERP
-      setSyncingCRM(true);
-      try {
-        await syncToERP(updated);
-        setSyncingCRM(false);
-        toast.success("Updated record synced to ERP");
-      } catch (err) {
-        setSyncingCRM(false);
-        toast.error(err instanceof Error ? err.message : "Re-sync failed");
-      }
-    } else {
-      toast.success("Job details updated");
-    }
-  }, [syncedCRM, syncToERP]);
-
   const syncToERP = useCallback(async (data: SummaryData) => {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/sync-erp`, {
       method: "POST",
@@ -323,6 +305,23 @@ const Index = () => {
     }
     return res.json();
   }, []);
+
+  const handleUpdate = useCallback(async (updated: SummaryData) => {
+    setSummary(updated);
+    if (syncedCRM) {
+      setSyncingCRM(true);
+      try {
+        await syncToERP(updated);
+        setSyncingCRM(false);
+        toast.success("Updated record synced to ERP");
+      } catch (err) {
+        setSyncingCRM(false);
+        toast.error(err instanceof Error ? err.message : "Re-sync failed");
+      }
+    } else {
+      toast.success("Job details updated");
+    }
+  }, [syncedCRM, syncToERP]);
 
   const handleSyncCRM = useCallback(async () => {
     if (!summary) return;

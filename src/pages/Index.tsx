@@ -34,10 +34,41 @@ interface ConfidenceData {
   outcome?: FieldConfidence;
 }
 
+interface GpsData {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  altitude: number;
+  timestamp: string;
+}
+
 interface DebugData {
   rawTranscript: string;
   rawExtraction: Record<string, unknown>;
+  gps: GpsData;
 }
+
+const generateFictiveGps = (): GpsData => {
+  // Random coordinates around industrial areas worldwide
+  const bases = [
+    { lat: 51.5074, lng: -0.1278 },   // London
+    { lat: 52.2297, lng: 21.0122 },   // Warsaw
+    { lat: 40.4168, lng: -3.7038 },   // Madrid
+    { lat: 48.8566, lng: 2.3522 },    // Paris
+    { lat: 53.3498, lng: -6.2603 },   // Dublin
+    { lat: 59.3293, lng: 18.0686 },   // Stockholm
+    { lat: 45.4642, lng: 9.1900 },    // Milan
+    { lat: 50.0755, lng: 14.4378 },   // Prague
+  ];
+  const base = bases[Math.floor(Math.random() * bases.length)];
+  return {
+    latitude: +(base.lat + (Math.random() - 0.5) * 0.1).toFixed(6),
+    longitude: +(base.lng + (Math.random() - 0.5) * 0.1).toFixed(6),
+    accuracy: +(3 + Math.random() * 15).toFixed(1),
+    altitude: +(10 + Math.random() * 200).toFixed(1),
+    timestamp: new Date().toISOString(),
+  };
+};
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -232,7 +263,7 @@ const Index = () => {
 
       const extracted = await extractRes.json();
 
-      setDebugData({ rawTranscript: text, rawExtraction: extracted });
+      setDebugData({ rawTranscript: text, rawExtraction: extracted, gps: generateFictiveGps() });
 
       setConfidenceData({
         site: extracted.site?.confidence != null ? extracted.site : undefined,
@@ -557,6 +588,20 @@ const Index = () => {
                     <pre className="p-4 text-xs font-mono text-muted-foreground whitespace-pre-wrap max-h-48 overflow-auto">
                       {debugData?.rawExtraction
                         ? JSON.stringify(debugData.rawExtraction, null, 2)
+                        : "No data yet. Record something first."}
+                    </pre>
+                  </div>
+
+                  {/* GPS Data */}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-2 border-b border-border bg-secondary/50">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground font-semibold">
+                        GPS Data (Simulated)
+                      </span>
+                    </div>
+                    <pre className="p-4 text-xs font-mono text-muted-foreground whitespace-pre-wrap max-h-48 overflow-auto">
+                      {debugData?.gps
+                        ? JSON.stringify(debugData.gps, null, 2)
                         : "No data yet. Record something first."}
                     </pre>
                   </div>

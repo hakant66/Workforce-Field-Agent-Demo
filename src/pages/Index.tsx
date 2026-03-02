@@ -290,14 +290,40 @@ const Index = () => {
     toast.success("Job details updated");
   };
 
-  const handleSyncCRM = () => {
+  const syncToERP = useCallback(async (data: SummaryData) => {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/sync-erp`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        site: data.site,
+        asset: data.asset,
+        description: data.jobDescription,
+        outcome: data.outcome,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "ERP sync failed");
+    }
+    return res.json();
+  }, []);
+
+  const handleSyncCRM = useCallback(async () => {
+    if (!summary) return;
     setSyncingCRM(true);
-    setTimeout(() => {
+    try {
+      await syncToERP(summary);
       setSyncingCRM(false);
       setSyncedCRM(true);
       toast.success("Job synced to ERP");
-    }, 2000);
-  };
+    } catch (err) {
+      setSyncingCRM(false);
+      toast.error(err instanceof Error ? err.message : "ERP sync failed");
+    }
+  }, [summary, syncToERP]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

@@ -60,6 +60,8 @@ const Index = () => {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+
   // Update document title during recording
   useEffect(() => {
     if (appState === "recording") {

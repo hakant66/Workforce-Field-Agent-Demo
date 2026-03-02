@@ -377,6 +377,19 @@ const Index = () => {
       await syncToERP(summary);
       setSyncingCRM(false);
       setSyncedCRM(true);
+      // Mark job as ERP-synced in history
+      if (editingJobId) {
+        updateJobInHistory({
+          id: editingJobId,
+          site: summary.site,
+          asset: summary.asset,
+          jobDescription: summary.jobDescription,
+          outcome: summary.outcome,
+          syncedAt: new Date().toISOString(),
+          erpSynced: true,
+        });
+        refreshUnsyncedCount();
+      }
       toast.success("Job synced to ERP");
       // Return to main menu after a brief delay
       setTimeout(() => {
@@ -393,7 +406,7 @@ const Index = () => {
       setSyncingCRM(false);
       toast.error(err instanceof Error ? err.message : "ERP sync failed");
     }
-  }, [summary, syncToERP]);
+  }, [summary, syncToERP, editingJobId, refreshUnsyncedCount]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

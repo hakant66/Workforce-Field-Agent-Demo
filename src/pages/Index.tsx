@@ -7,7 +7,7 @@ import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
 import TranscriptPanel from "@/components/TranscriptPanel";
 import SummaryCard from "@/components/SummaryCard";
-import HistoryPanel, { saveJobToHistory, type JobRecord } from "@/components/HistoryPanel";
+import HistoryPanel, { saveJobToHistory, loadJobHistory, type JobRecord } from "@/components/HistoryPanel";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
 import { useTheme } from "@/hooks/use-theme";

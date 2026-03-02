@@ -8,6 +8,8 @@ interface FieldHeaderProps {
   pendingCount?: number;
   isRecording?: boolean;
   recordingDuration?: number;
+  theme?: "dark" | "light";
+  onToggleTheme?: () => void;
 }
 
 const formatDuration = (seconds: number) => {

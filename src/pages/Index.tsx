@@ -495,7 +495,7 @@ const Index = () => {
 
       <HistoryPanel
         open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
+        onClose={() => { setHistoryOpen(false); refreshUnsyncedCount(); }}
         pendingCount={pendingCount}
         isSyncingQueue={isProcessing}
         onSyncNow={processQueue}
@@ -506,6 +506,7 @@ const Index = () => {
             jobDescription: job.jobDescription,
             outcome: job.outcome,
           });
+          refreshUnsyncedCount();
         }}
       />
     </div>

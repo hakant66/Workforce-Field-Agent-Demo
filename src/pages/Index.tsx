@@ -263,7 +263,7 @@ const Index = () => {
 
       const extracted = await extractRes.json();
 
-      setDebugData({ rawTranscript: text, rawExtraction: extracted });
+      setDebugData({ rawTranscript: text, rawExtraction: extracted, gps: generateFictiveGps() });
 
       setConfidenceData({
         site: extracted.site?.confidence != null ? extracted.site : undefined,

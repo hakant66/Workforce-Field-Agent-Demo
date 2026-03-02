@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw } from "lucide-react";
+import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw, Send, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 export interface JobRecord {
   id: string;
@@ -11,6 +12,7 @@ export interface JobRecord {
   jobDescription: string;
   aiConfidence?: number;
   syncedAt: string;
+  erpSynced?: boolean;
 }
 
 const STORAGE_KEY = "workforce-job-history";
@@ -77,10 +79,18 @@ interface HistoryPanelProps {
   pendingCount?: number;
   isSyncingQueue?: boolean;
   onSyncNow?: () => void;
+  onSyncJobToERP?: (job: JobRecord) => Promise<void>;
 }
 
-export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow }: HistoryPanelProps) {
+export function markJobErpSynced(jobId: string) {
+  const history = loadJobHistory();
+  const updated = history.map((j) => (j.id === jobId ? { ...j, erpSynced: true } : j));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}
+
+export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow, onSyncJobToERP }: HistoryPanelProps) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) setJobs(loadJobHistory());
@@ -89,6 +99,21 @@ export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncin
   const handleClear = () => {
     clearJobHistory();
     setJobs([]);
+  };
+
+  const handleSyncJob = async (job: JobRecord) => {
+    if (!onSyncJobToERP) return;
+    setSyncingJobId(job.id);
+    try {
+      await onSyncJobToERP(job);
+      markJobErpSynced(job.id);
+      setJobs((prev) => prev.map((j) => (j.id === job.id ? { ...j, erpSynced: true } : j)));
+      toast.success(`Job at ${job.site} synced to ERP`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "ERP sync failed");
+    } finally {
+      setSyncingJobId(null);
+    }
   };
 
   return (
@@ -229,6 +254,30 @@ export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncin
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         {job.jobDescription}
                       </p>
+
+                      {/* Sync to ERP button */}
+                      {onSyncJobToERP && (
+                        <div className="pt-1">
+                          {job.erpSynced ? (
+                            <span className="text-[10px] font-mono text-signal flex items-center gap-1">
+                              <Send className="w-3 h-3" /> Synced to ERP
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleSyncJob(job)}
+                              disabled={syncingJobId === job.id}
+                              className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                            >
+                              {syncingJobId === job.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Send className="w-3 h-3" />
+                              )}
+                              {syncingJobId === job.id ? "Syncing..." : "Sync to ERP"}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </div>

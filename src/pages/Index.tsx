@@ -7,7 +7,7 @@ import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
 import TranscriptPanel from "@/components/TranscriptPanel";
 import SummaryCard from "@/components/SummaryCard";
-import HistoryPanel, { saveJobToHistory } from "@/components/HistoryPanel";
+import HistoryPanel, { saveJobToHistory, type JobRecord } from "@/components/HistoryPanel";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
 import { useTheme } from "@/hooks/use-theme";
@@ -487,6 +487,14 @@ const Index = () => {
         pendingCount={pendingCount}
         isSyncingQueue={isProcessing}
         onSyncNow={processQueue}
+        onSyncJobToERP={async (job: JobRecord) => {
+          await syncToERP({
+            site: job.site,
+            asset: job.asset,
+            jobDescription: job.jobDescription,
+            outcome: job.outcome,
+          });
+        }}
       />
     </div>
   );

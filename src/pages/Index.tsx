@@ -557,6 +557,7 @@ const Index = () => {
           });
           refreshUnsyncedCount();
         }}
+        onEditJob={handleEditFromHistory}
       />
     </div>
   );

@@ -30,7 +30,7 @@ function persistQueue(queue: QueueItem[]) {
 }
 
 export function useSyncQueue() {
-  const isOnline = useOnlineStatus();
+  const { isOnline } = useOnlineStatus();
   const [queue, setQueue] = useState<QueueItem[]>(loadQueue);
   const [isProcessing, setIsProcessing] = useState(false);
   const processingRef = useRef(false);

@@ -254,6 +254,30 @@ export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncin
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         {job.jobDescription}
                       </p>
+
+                      {/* Sync to ERP button */}
+                      {onSyncJobToERP && (
+                        <div className="pt-1">
+                          {job.erpSynced ? (
+                            <span className="text-[10px] font-mono text-signal flex items-center gap-1">
+                              <Send className="w-3 h-3" /> Synced to ERP
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleSyncJob(job)}
+                              disabled={syncingJobId === job.id}
+                              className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                            >
+                              {syncingJobId === job.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Send className="w-3 h-3" />
+                              )}
+                              {syncingJobId === job.id ? "Syncing..." : "Sync to ERP"}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
                   ))}
                 </div>

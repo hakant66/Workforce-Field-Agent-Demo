@@ -7,7 +7,7 @@ import RecordButton from "@/components/RecordButton";
 import AudioWaveform from "@/components/AudioWaveform";
 import TranscriptPanel from "@/components/TranscriptPanel";
 import SummaryCard from "@/components/SummaryCard";
-import HistoryPanel, { saveJobToHistory, loadJobHistory, type JobRecord } from "@/components/HistoryPanel";
+import HistoryPanel, { saveJobToHistory, loadJobHistory, updateJobInHistory, type JobRecord } from "@/components/HistoryPanel";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
 import { useTheme } from "@/hooks/use-theme";
@@ -59,6 +59,7 @@ const Index = () => {
   const [debugData, setDebugData] = useState<DebugData | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [unsyncedErpCount, setUnsyncedErpCount] = useState(0);
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
 
   // Track unsynced ERP jobs
   const refreshUnsyncedCount = useCallback(() => {
@@ -155,6 +156,7 @@ const Index = () => {
       setSyncingCRM(false);
       setSyncedCRM(false);
       setSyncing(false);
+      setEditingJobId(null);
     } catch (err) {
       console.error("Microphone access error:", err);
       toast.error("Could not access microphone. Please allow microphone permissions.");
@@ -320,6 +322,19 @@ const Index = () => {
 
   const handleUpdate = useCallback(async (updated: SummaryData) => {
     setSummary(updated);
+    // Persist edit to history if editing a history job
+    if (editingJobId) {
+      updateJobInHistory({
+        id: editingJobId,
+        site: updated.site,
+        asset: updated.asset,
+        jobDescription: updated.jobDescription,
+        outcome: updated.outcome,
+        syncedAt: new Date().toISOString(),
+        erpSynced: false,
+      });
+      refreshUnsyncedCount();
+    }
     if (syncedCRM) {
       setSyncingCRM(true);
       try {
@@ -333,7 +348,26 @@ const Index = () => {
     } else {
       toast.success("Job details updated");
     }
-  }, [syncedCRM, syncToERP]);
+  }, [syncedCRM, syncToERP, editingJobId, refreshUnsyncedCount]);
+
+  const handleEditFromHistory = useCallback((job: JobRecord) => {
+    setEditingJobId(job.id);
+    setSummary({
+      site: job.site,
+      asset: job.asset,
+      jobDescription: job.jobDescription,
+      outcome: job.outcome,
+    });
+    setConfidenceData(null);
+    setTranscriptLines([]);
+    setDebugData(null);
+    setSynced(true); // Already accepted
+    setSyncing(false);
+    setSyncedCRM(false);
+    setSyncingCRM(false);
+    setAppState("result");
+    setHistoryOpen(false);
+  }, []);
 
   const handleSyncCRM = useCallback(async () => {
     if (!summary) return;
@@ -523,6 +557,7 @@ const Index = () => {
           });
           refreshUnsyncedCount();
         }}
+        onEditJob={handleEditFromHistory}
       />
     </div>
   );

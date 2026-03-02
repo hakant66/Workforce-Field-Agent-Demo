@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw, Send, Loader2 } from "lucide-react";
+import { History, X, MapPin, Wrench, Trash2, Download, RefreshCw, Send, Loader2, Pencil } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
@@ -80,6 +80,13 @@ interface HistoryPanelProps {
   isSyncingQueue?: boolean;
   onSyncNow?: () => void;
   onSyncJobToERP?: (job: JobRecord) => Promise<void>;
+  onEditJob?: (job: JobRecord) => void;
+}
+
+export function updateJobInHistory(updatedJob: JobRecord) {
+  const history = loadJobHistory();
+  const updated = history.map((j) => (j.id === updatedJob.id ? updatedJob : j));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }
 
 export function markJobErpSynced(jobId: string) {
@@ -88,7 +95,7 @@ export function markJobErpSynced(jobId: string) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }
 
-export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow, onSyncJobToERP }: HistoryPanelProps) {
+export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncingQueue, onSyncNow, onSyncJobToERP, onEditJob }: HistoryPanelProps) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [syncingJobId, setSyncingJobId] = useState<string | null>(null);
 
@@ -263,18 +270,29 @@ export default function HistoryPanel({ open, onClose, pendingCount = 0, isSyncin
                               <Send className="w-3 h-3" /> Synced to ERP
                             </span>
                           ) : (
-                            <button
-                              onClick={() => handleSyncJob(job)}
-                              disabled={syncingJobId === job.id}
-                              className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
-                            >
-                              {syncingJobId === job.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Send className="w-3 h-3" />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleSyncJob(job)}
+                                disabled={syncingJobId === job.id}
+                                className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                              >
+                                {syncingJobId === job.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Send className="w-3 h-3" />
+                                )}
+                                {syncingJobId === job.id ? "Syncing..." : "Sync to ERP"}
+                              </button>
+                              {onEditJob && (
+                                <button
+                                  onClick={() => onEditJob(job)}
+                                  className="flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-md bg-secondary text-foreground border border-border hover:bg-secondary/80 transition-colors"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  Edit
+                                </button>
                               )}
-                              {syncingJobId === job.id ? "Syncing..." : "Sync to ERP"}
-                            </button>
+                            </div>
                           )}
                         </div>
                       )}

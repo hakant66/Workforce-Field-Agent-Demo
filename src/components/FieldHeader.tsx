@@ -6,6 +6,8 @@ interface FieldHeaderProps {
   onHistoryClick?: () => void;
   isSyncingQueue?: boolean;
   pendingCount?: number;
+  isRecording?: boolean;
+  recordingDuration?: number;
 }
 
 export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount }: FieldHeaderProps) {

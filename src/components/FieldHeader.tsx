@@ -1,4 +1,4 @@
-import { Signal, Wifi, Battery, History, Loader2 } from "lucide-react";
+import { Signal, Wifi, Battery, History, Loader2, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ckdeltaLogo from "@/assets/ckdelta-logo.png";
 
@@ -8,6 +8,8 @@ interface FieldHeaderProps {
   pendingCount?: number;
   isRecording?: boolean;
   recordingDuration?: number;
+  theme?: "dark" | "light";
+  onToggleTheme?: () => void;
 }
 
 const formatDuration = (seconds: number) => {
@@ -16,7 +18,7 @@ const formatDuration = (seconds: number) => {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 
-export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount, isRecording, recordingDuration = 0 }: FieldHeaderProps) {
+export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCount, isRecording, recordingDuration = 0, theme, onToggleTheme }: FieldHeaderProps) {
   return (
     <header className={`border-b sticky top-0 z-30 overflow-hidden transition-colors duration-300 ${isRecording ? "bg-recording/10 border-recording/30" : "bg-header-bg border-header-border"}`}>
       {/* Scan line effect */}
@@ -93,6 +95,19 @@ export default function FieldHeader({ onHistoryClick, isSyncingQueue, pendingCou
                 <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
                   {pendingCount}
                 </span>
+              )}
+            </button>
+          )}
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              className="p-1.5 rounded hover:bg-secondary transition-colors"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+              ) : (
+                <Moon className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
               )}
             </button>
           )}

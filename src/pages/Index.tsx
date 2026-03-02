@@ -10,6 +10,7 @@ import SummaryCard from "@/components/SummaryCard";
 import HistoryPanel, { saveJobToHistory } from "@/components/HistoryPanel";
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSyncQueue } from "@/hooks/use-sync-queue";
+import { useTheme } from "@/hooks/use-theme";
 
 type AppState = "idle" | "recording" | "processing" | "result";
 
@@ -44,6 +45,7 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const Index = () => {
   const isOnline = useOnlineStatus();
   const { enqueue, isProcessing, pendingCount, processQueue } = useSyncQueue();
+  const { theme, toggleTheme } = useTheme();
   const [appState, setAppState] = useState<AppState>("idle");
   const [duration, setDuration] = useState(0);
   const [transcriptLines, setTranscriptLines] = useState<string[]>([]);
@@ -299,7 +301,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} isSyncingQueue={isProcessing} pendingCount={pendingCount} isRecording={appState === "recording"} recordingDuration={duration} />
+      <FieldHeader onHistoryClick={() => setHistoryOpen(true)} isSyncingQueue={isProcessing} pendingCount={pendingCount} isRecording={appState === "recording"} recordingDuration={duration} theme={theme} onToggleTheme={toggleTheme} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 pb-8">
         {/* Offline Banner */}

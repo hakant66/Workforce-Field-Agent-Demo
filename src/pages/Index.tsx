@@ -321,6 +321,19 @@ const Index = () => {
 
   const handleUpdate = useCallback(async (updated: SummaryData) => {
     setSummary(updated);
+    // Persist edit to history if editing a history job
+    if (editingJobId) {
+      updateJobInHistory({
+        id: editingJobId,
+        site: updated.site,
+        asset: updated.asset,
+        jobDescription: updated.jobDescription,
+        outcome: updated.outcome,
+        syncedAt: new Date().toISOString(),
+        erpSynced: false,
+      });
+      refreshUnsyncedCount();
+    }
     if (syncedCRM) {
       setSyncingCRM(true);
       try {
@@ -334,7 +347,26 @@ const Index = () => {
     } else {
       toast.success("Job details updated");
     }
-  }, [syncedCRM, syncToERP]);
+  }, [syncedCRM, syncToERP, editingJobId, refreshUnsyncedCount]);
+
+  const handleEditFromHistory = useCallback((job: JobRecord) => {
+    setEditingJobId(job.id);
+    setSummary({
+      site: job.site,
+      asset: job.asset,
+      jobDescription: job.jobDescription,
+      outcome: job.outcome,
+    });
+    setConfidenceData(null);
+    setTranscriptLines([]);
+    setDebugData(null);
+    setSynced(true); // Already accepted
+    setSyncing(false);
+    setSyncedCRM(false);
+    setSyncingCRM(false);
+    setAppState("result");
+    setHistoryOpen(false);
+  }, []);
 
   const handleSyncCRM = useCallback(async () => {
     if (!summary) return;

@@ -279,26 +279,16 @@ const Index = () => {
                 .reduce((sum, c, _, arr) => sum + c / arr.length, 0)
             )
           : undefined;
-        saveJobToHistory({
+        const savedJob = saveJobToHistory({
           site: summary.site,
           asset: summary.asset,
           outcome: summary.outcome,
           jobDescription: summary.jobDescription,
           aiConfidence: avgConfidence,
         });
+        setEditingJobId(savedJob.id);
         toast.success("Job accepted and saved to history");
         refreshUnsyncedCount();
-        // Return to main menu after a brief delay
-        setTimeout(() => {
-          setSummary(null);
-          setConfidenceData(null);
-          setTranscriptLines([]);
-          setDebugData(null);
-          setSynced(false);
-          setSyncedCRM(false);
-          setEditingJobId(null);
-          setAppState("idle");
-        }, 1200);
       }
     }, 2000);
   };
@@ -387,6 +377,19 @@ const Index = () => {
       await syncToERP(summary);
       setSyncingCRM(false);
       setSyncedCRM(true);
+      // Mark job as ERP-synced in history
+      if (editingJobId) {
+        updateJobInHistory({
+          id: editingJobId,
+          site: summary.site,
+          asset: summary.asset,
+          jobDescription: summary.jobDescription,
+          outcome: summary.outcome,
+          syncedAt: new Date().toISOString(),
+          erpSynced: true,
+        });
+        refreshUnsyncedCount();
+      }
       toast.success("Job synced to ERP");
       // Return to main menu after a brief delay
       setTimeout(() => {
@@ -403,7 +406,7 @@ const Index = () => {
       setSyncingCRM(false);
       toast.error(err instanceof Error ? err.message : "ERP sync failed");
     }
-  }, [summary, syncToERP]);
+  }, [summary, syncToERP, editingJobId, refreshUnsyncedCount]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
